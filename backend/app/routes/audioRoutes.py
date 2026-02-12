@@ -1,5 +1,5 @@
 from fastapi import APIRouter,Depends, File, UploadFile
-from app.schemas.audioSchema import audioReturn
+from app.schemas.audioSchemas import audioReturn
 from app.services import audioServices as service
 
 

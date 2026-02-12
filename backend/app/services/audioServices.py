@@ -1,5 +1,5 @@
 from fastapi import UploadFile
-from app.schemas.audioSchema import audioReturn
+from app.schemas.audioSchemas import audioReturn
 import tempfile
 import asyncio
 from app.config import openai
