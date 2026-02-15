@@ -1,6 +1,7 @@
 from app.schemas.bookSchemas import bookCreate
 from app.models.bookModels import Book
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 import httpx
@@ -9,31 +10,49 @@ import json
 def process_book(url,t,f):
     return "processing"
 
-async def create_book_frame(book:bookCreate,db:Session):
-    already_processed = db.query(Book).filter(Book.title == book.title,Book.author == book.author).first()
+#create_book_frame helper functions
+
+
+async def get_book(book:bookCreate,db:Session):
+    if not book.title and not book.author:
+        return "Need book or title"
     
-    if already_processed:
-        return already_processed
+    if book.title:
+        already_processed_title = db.query(Book).filter(func.lower(Book.title)==book.title.lower()).first()
+        if already_processed_title:
+            return already_processed_title
     
     async with httpx.AsyncClient() as client:
         resp = await client.get("https://gutendex.com/books/", params={"search": book.title})
         data = resp.json()
         #print(data,flush=True)
+    
     if data["count"] == 0: #book dont exist in gutenberg
         return None
     
 
-    guten_book = data["results"][0]
+    return data["results"]
+
+
+
+async def process_book(book:bookCreate,db:Session):
+
+    already_processed = db.query(Book).filter(Book.title == book.title,Book.author == guten_book["authors"][0]["name"]).first()
+    
+    if already_processed:
+        return already_processed
     #text_url = guten_book["formats"].get("text/plain; charset=us-ascii")
     text_url = None
     for key, value in guten_book["formats"].items():
         if key.startswith("text/plain"):
             text_url = value
-            break
-    html_url = guten_book["formats"].get("text/html")
+        elif key.startswith("text/html"):
+            html_url = value
 
-    cover_image_url = guten_book["formats"].get("image/jpeg")
-    title = guten_book["title"]
+
+
+    cover_image_url = book["formats"].get("image/jpeg")
+    title = gbook["title"]
     author = guten_book["authors"][0]["name"]
    
     if text_url:
