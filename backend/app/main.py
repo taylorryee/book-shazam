@@ -7,6 +7,7 @@ app = FastAPI()
 
 @app.on_event("startup")
 def on_startup():
+    Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
 
 app.include_router(audioRouter)

@@ -13,11 +13,19 @@ class Person(BaseModel):
 
 
 class gutendexBook(BaseModel):
-    id:int
+    gutenberg_id:int
     title:str
-    authors:List[Person]
+    authors:List[str] | None
     copyright:bool | None
-    formats:dict[str,str]
+    formats:Dict[str,str]
+    text_url:str | None=None
+    html_url:str | None=None
+    cover_image_url:str | None
+
+    class Config:
+        from_attributes=True
+
+
 
 
 class bookReturn(BaseModel):

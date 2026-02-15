@@ -1,4 +1,4 @@
-from app.schemas.bookSchemas import bookCreate
+from app.schemas.bookSchemas import bookCreate,gutendexBook
 from app.models.bookModels import Book
 
 from sqlalchemy import func
@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 import httpx
 import json
+from fastapi import HTTPException
 
 def process_book(url,t,f):
     return "processing"
@@ -15,23 +16,32 @@ def process_book(url,t,f):
 
 async def get_book(book:bookCreate,db:Session):
     if not book.title and not book.author:
-        return "Need book or title"
+        raise HTTPException(400,"Needs a title or an author")
     
     if book.title:
-        already_processed_title = db.query(Book).filter(func.lower(Book.title)==book.title.lower()).first()
+        already_processed_title = db.query(Book).filter(func.lower(Book.title)==book.title.lower()).all()
         if already_processed_title:
             return already_processed_title
-    
+
+    query = " ".join(filter(None, [book.title, book.author]))
+    print(query,"QUERY NIGGA",flush=True)
     async with httpx.AsyncClient() as client:
-        resp = await client.get("https://gutendex.com/books/", params={"search": book.title})
+        resp = await client.get("https://gutendex.com/books/", params={"search":query})
         data = resp.json()
         #print(data,flush=True)
     
     if data["count"] == 0: #book dont exist in gutenberg
-        return None
-    
+        raise HTTPException(404,"Book not found")
 
-    return data["results"]
+    ans = []
+    for book in data["results"]:
+        cover_image_url = book["formats"].get("image/jpeg")
+        authorList = []
+        for author in book["authors"]:
+            authorList.append(author["name"])
+        ans.append(gutendexBook(gutenberg_id=book["id"],title=book["title"],authors=authorList,formats=book["formats"],cover_image_url=cover_image_url,copyright=book["copyright"]))
+    
+    return ans
 
 
 

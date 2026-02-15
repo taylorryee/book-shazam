@@ -2,6 +2,8 @@ from sqlalchemy import Column,Integer,String,ForeignKey,Enum,UniqueConstraint
 from sqlalchemy.orm import relationship
 from app.db import Base
 import enum
+from sqlalchemy.dialects.postgresql import ARRAY,JSONB
+
 
 class ProcessLevel(enum.Enum):
     noContext = "noContext" #no book context
@@ -13,7 +15,8 @@ class Book(Base):
     id = Column(Integer,primary_key=True)
     gutenberg_id = Column(Integer,unique=True,index=True,nullable=True)
     title = Column(String,index=True)
-    author = Column(String,index=True)
+    authors = Column(ARRAY(String), nullable=True)
+    formats = Column(JSONB,nullable=True)
     text_url = Column(String,index=True,nullable=True)
     html_url = Column(String,index=True,nullable=True)
     cover_image_url = Column(String,index=True,nullable=True)
