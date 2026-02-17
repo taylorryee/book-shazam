@@ -6,36 +6,29 @@ class bookCreate(BaseModel):
     author:str | None=None
     title:str | None=None
 
-class Person(BaseModel):
+class person(BaseModel):
     birth_year: int | None
     death_year: int | None
     name: str
 
 
-class gutendexBook(BaseModel):
-    gutenberg_id:int
+class bookData(BaseModel):
     title:str
-    authors:List[str] | None
-    copyright:bool | None
-    formats:Dict[str,str]
-    text_url:str | None=None
-    html_url:str | None=None
-    cover_image_url:str | None
+    id:int | None=None
+    gutenberg_id:int | None=None
+    authors:List[person] | None=None
+    copyright:bool | None=None
+    formats:Dict[str,str] | None=None
 
     class Config:
         from_attributes=True
 
 
-
-
 class bookReturn(BaseModel):
     id:int
     title:str | None=None
-    authors:List[str] | None=None
-
+    authors:List[person] | None=None
     gutenberg_id:int | None=None
-    text_url:str | None=None
-    html_url:str | None=None
     cover_image_url:str | None=None
     process_level:str
 

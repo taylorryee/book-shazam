@@ -1,15 +1,14 @@
-from app.schemas.bookSchemas import bookCreate,gutendexBook
+from app.schemas.bookSchemas import bookCreate,bookData
 from app.models.bookModels import Book
+from app.utils.bookProcessing import clean_text
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-import httpx
-import json
+import httpx,json,requests
 from fastapi import HTTPException
 
-def process_book(url,t,f):
-    return "processing"
+
 
 #create_book_frame helper functions
 
@@ -24,7 +23,7 @@ async def get_book(book:bookCreate,db:Session):
             return already_processed_title
 
     query = " ".join(filter(None, [book.title, book.author]))
-    print(query,"QUERY NIGGA",flush=True)
+
     async with httpx.AsyncClient() as client:
         resp = await client.get("https://gutendex.com/books/", params={"search":query})
         data = resp.json()
@@ -34,58 +33,25 @@ async def get_book(book:bookCreate,db:Session):
         raise HTTPException(404,"Book not found")
 
     ans = []
-    for book in data["results"]:
-        cover_image_url = book["formats"].get("image/jpeg")
-        authorList = []
-        for author in book["authors"]:
-            authorList.append(author["name"])
-        ans.append(gutendexBook(gutenberg_id=book["id"],title=book["title"],authors=authorList,formats=book["formats"],cover_image_url=cover_image_url,copyright=book["copyright"]))
+    for book in data["results"]: #Get every book that shows up for what the user requested
+        ans.append(bookData(gutenberg_id=book["id"],title=book["title"],authors=book["authors"],formats=book["formats"],copyright=book["copyright"]))
     
     return ans
 
 
+async def process_book(book:bookData,db:Session):
+    #already_processed = db.query(Book).filter(Book.gutenberg_id == book.gutenberg_id)
 
-async def process_book(book:bookCreate,db:Session):
-
-    already_processed = db.query(Book).filter(Book.title == book.title,Book.author == guten_book["authors"][0]["name"]).first()
+    ##   return already_processed
     
-    if already_processed:
-        return already_processed
-    #text_url = guten_book["formats"].get("text/plain; charset=us-ascii")
-    text_url = None
-    for key, value in guten_book["formats"].items():
-        if key.startswith("text/plain"):
-            text_url = value
-        elif key.startswith("text/html"):
-            html_url = value
-
-
-
-    cover_image_url = book["formats"].get("image/jpeg")
-    title = gbook["title"]
-    author = guten_book["authors"][0]["name"]
-   
-    if text_url:
-        process_level ="processing"#await process_book(text_url,True,False) #THIS SHOULD BE CELERY TASK, process_level(url,text_url?,html_url?)
-        #process_book.delay(text_url,True,False) #Celery task for once we i setup celery
-        #process_level = "processing"
+    text_url = (book.formats.get("text/plain; charset=utf-8") or 
+                book.formats.get("text/plain") or 
+                book.formats.get("text/plain; charset=us-ascii"))
     
-    elif html_url:
-        process_level = "processing"#await process_book(html_url,False,True)
-        #process_book.delay(html_url,False,True)
-        #process_level="processing"
-    else:
-        process_level = "noContext"
+    response = await requests.get(text_url)
+
+    cleaned_text = clean_text(response.text)
     
-    new_book = Book(gutenberg_id = guten_book["id"],title=title, author=author, text_url=text_url, html_url=html_url, cover_image_url=cover_image_url,process_level=process_level)
-    db.add(new_book)
-    try:
-        db.commit()
-        db.refresh(new_book)
-        return new_book
-    
-    except IntegrityError:
-        db.rollback()
-        return None
+    return cleaned_text
 
     
