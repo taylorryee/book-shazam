@@ -1,33 +1,58 @@
-import re
+import re, os
+import unicodedata
+from app.celery_app import celery
 
-def clean_text(text:str):
-    """
-    Cleans a Project Gutenberg text file by:
-    - Removing header and footer boilerplate
-    - Normalizing line endings
-    - Removing excessive blank lines
-    - Stripping trailing whitespace
-    """
 
-    # Normalize line endings (Windows -> Unix)
+@celery.task
+def clean_text(text: str):
+    # Normalize unicode
+    text = unicodedata.normalize("NFKC", text)
+
+    # Normalize line endings
     text = text.replace("\r\n", "\n")
 
     # Remove Gutenberg header
-    start_pattern = r"\*\*\* START OF .*?\*\*\*"
+    start_pattern = r"\*\*\*\s*START OF.*?\*\*\*"
     start_match = re.search(start_pattern, text, re.IGNORECASE)
     if start_match:
         text = text[start_match.end():]
 
     # Remove Gutenberg footer
-    end_pattern = r"\*\*\* END OF .*?\*\*\*"
+    end_pattern = r"\*\*\*\s*END OF.*?\*\*\*"
     end_match = re.search(end_pattern, text, re.IGNORECASE)
     if end_match:
         text = text[:end_match.start()]
 
-    # Remove excessive blank lines (3+ → 2)
-    text = re.sub(r"\n{3,}", "\n\n", text)
+    # Normalize smart punctuation
+    replacements = {
+        "“": '"',
+        "”": '"',
+        "‘": "'",
+        "’": "'",
+        "—": "-",
+        "–": "-",
+    }
+    for k, v in replacements.items():
+        text = text.replace(k, v)
 
-    # Strip trailing whitespace on each line
-    text = "\n".join(line.rstrip() for line in text.split("\n"))
+    # Remove bracket-only lines
+    text = re.sub(r"^\[.*?\]$", "", text, flags=re.MULTILINE)
 
-    return text.strip()
+    # Remove excessive blank lines and strip trailing whitespace
+    cleaned = "\n".join(line.rstrip() for line in re.sub(r"\n{3,}", "\n\n", text).split("\n")).strip()
+
+    # Ensure directory exists
+    #dir_path = os.path.dirname(file_path)
+    #if dir_path:
+     #   os.makedirs(dir_path, exist_ok=True)
+
+    # Write to file
+    #with open(file_path, "w", encoding="utf-8") as f:
+     #   f.write(cleaned)
+
+    return cleaned
+
+
+
+
+

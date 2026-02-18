@@ -7,9 +7,21 @@ class bookCreate(BaseModel):
     title:str | None=None
 
 class person(BaseModel):
-    birth_year: int | None
-    death_year: int | None
     name: str
+
+
+class fullBook(BaseModel):
+    id:int | None=None
+    gutenberg_id:int | None=None
+    title:str
+    authors:List[person] | None=None
+    formats:Dict[str,str] | None=None
+    text_url:str | None=None
+    cover_image_url:str | None=None
+    process_level:str | None=None
+
+    class Config:
+        from_attributes=True
 
 
 class bookData(BaseModel):
