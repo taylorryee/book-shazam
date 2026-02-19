@@ -1,4 +1,4 @@
-from app.schemas.bookSchemas import bookCreate,fullBook
+from app.schemas.bookSchemas import bookCreate,bookFull
 from app.models.bookModels import Book
 from app.utils.bookProcessing import clean_text
 
@@ -31,17 +31,17 @@ async def get_book(book:bookCreate,db:Session):
 
     ans = []
     for book in data["results"]: #Get every book that shows up for what the user requested
-        ans.append(fullBook(gutenberg_id=book["id"],title=book["title"],authors=book["authors"],formats=book["formats"]))
+        authors_list = [author["name"] for author in book["authors"]]
+        ans.append(bookFull(gutenberg_id=book["id"],title=book["title"],authors=authors_list,formats=book["formats"],process_level=None))
     
     return ans
 
 
-async def process_book(book:fullBook,db:Session):
+async def process_book(book:bookFull,db:Session):
     already_processed = db.query(Book).filter(Book.gutenberg_id == book.gutenberg_id).first()
     if already_processed:
-        raise HTTPException(400,"book already in db")
+        return already_processed
 
-    ##   return already_processed
     
     text_url = (book.formats.get("text/plain; charset=utf-8") or 
                 book.formats.get("text/plain") or 
@@ -51,20 +51,20 @@ async def process_book(book:fullBook,db:Session):
     
     async with httpx.AsyncClient(follow_redirects=True) as client:
         response = await client.get(text_url)
-        #response.raise_for_status()
-    #file_path = os.path.abspath(f"output_{book.gutenberg_id}.txt")
-    print("About to enqueue celery task...",flush=True)
-    process_task = clean_text.delay(response.text) 
-    print("enqued celery task..",process_task.id,flush=True)
-    authors_list = [person.name for person in book.authors]
-    processing_book = Book(gutenberg_id=book.gutenberg_id, title=book.title, authors=authors_list, formats=book.formats, text_url=text_url, cover_image_url=cover_image_url,process_level="processing")
+        response.raise_for_status()
+
+    #print("About to enqueue celery task...",flush=True)
+    process_task = clean_text.delay(response.text,book.gutenberg_id) 
+    #print("enqued celery task..",process_task.id,flush=True)
+
+    processing_book = Book(gutenberg_id=book.gutenberg_id, title=book.title, authors=book.authors, formats=book.formats, text_url=text_url, cover_image_url=cover_image_url,process_level="processing")
     
     db.add(processing_book)
     
     try:
         db.commit()
-        return {"process_task:id":process_task.id}
+        return processing_book
     except IntegrityError:
         db.rollback()
-        raise HTTPException(400,"book already in db")
+        raise HTTPException(400,"error adding to db")
     

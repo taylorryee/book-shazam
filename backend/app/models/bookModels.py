@@ -15,7 +15,7 @@ class Book(Base):
     id = Column(Integer,primary_key=True)
     gutenberg_id = Column(Integer,unique=True,index=True,nullable=True)
     title = Column(String,index=True)
-    authors = Column(JSONB,index=True, nullable=True)
+    authors = Column(ARRAY(String),index=True, nullable=True)
     formats = Column(JSONB,index=True,nullable=True)
     text_url = Column(String,index=True,nullable=True)
     cover_image_url = Column(String,index=True,nullable=True)
@@ -24,7 +24,7 @@ class Book(Base):
     bookChunks = relationship("BookChunks",back_populates="books")
 
     __table__args=(
-        UniqueConstraint('title','author')
+        UniqueConstraint('title','authors')
     )
 
 class BookChunks(Base):

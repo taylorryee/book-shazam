@@ -9,40 +9,18 @@ class bookCreate(BaseModel):
 class person(BaseModel):
     name: str
 
-
-class fullBook(BaseModel):
+class bookFull(BaseModel):
     id:int | None=None
     gutenberg_id:int | None=None
     title:str
-    authors:List[person] | None=None
-    formats:Dict[str,str] | None=None
+    authors:List[str] = []
+    formats:Dict[str,str] = {}
     text_url:str | None=None
     cover_image_url:str | None=None
-    process_level:str | None=None
+    process_level:str | None
+
 
     class Config:
         from_attributes=True
 
 
-class bookData(BaseModel):
-    title:str
-    id:int | None=None
-    gutenberg_id:int | None=None
-    authors:List[person] | None=None
-    copyright:bool | None=None
-    formats:Dict[str,str] | None=None
-
-    class Config:
-        from_attributes=True
-
-
-class bookReturn(BaseModel):
-    id:int
-    title:str | None=None
-    authors:List[person] | None=None
-    gutenberg_id:int | None=None
-    cover_image_url:str | None=None
-    process_level:str
-
-    class Config:
-        from_attributes = True
