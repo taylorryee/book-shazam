@@ -6,9 +6,17 @@ from app.db import get_db
 from app.services import bookServices as service
 from app.celery_app import celery
 from celery.result import AsyncResult
-
+from app.models.bookModels import Book
 
 router = APIRouter(prefix = "/book",tags=["Book Routes"])
+
+@router.get("/",response_model = bookFull)
+def get_book(id:int,db:Session=Depends(get_db)):
+    book = db.query(Book).get(id)
+    if not book:
+        raise HTTPException(400,"aw man")
+    return book
+
 
 @router.post("/",response_model=List[bookFull])
 async def get_book(book:bookCreate,db:Session=Depends(get_db)):

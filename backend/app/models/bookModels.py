@@ -20,6 +20,7 @@ class Book(Base):
     text_url = Column(String,index=True,nullable=True)
     cover_image_url = Column(String,index=True,nullable=True)
     process_level = Column(Enum(ProcessLevel),index=True)
+    text = Column(Text,nullable=True)
     
     bookChunks = relationship("BookChunks",back_populates="books")
 
