@@ -3,6 +3,7 @@ from app.celery_app import celery
 from sqlalchemy.orm import Session
 from app.db import SessionLocal
 from app.models.bookModels import Book
+from sqlalchemy import text
 
 
 
@@ -69,5 +70,67 @@ def clean_text(book_id:int):
 
 
 
+@celery.task
+def clean_text(): #Pull based - checks db for process_level = "uploaded"
+    db = SessionLocal()
 
+    try:
+        book = db.query(Book).filter(Book.process_level=='uploaded').with_for_update(skip_locked=True).first() #with_for_update locks db row/rows unitll you commit or rollback
+        #and skip_locked tells other workers to skip locked rows and keep searching instead of blocking untill locked row is unlocked
+        if not book:
+            return 
+        
+        book.process_level = "cleaning"
+        db.commit()
+        
+        text = unicodedata.normalize("NFKC", book.text)
+
+        # Normalize line endings
+        text = text.replace("\r\n", "\n")
+
+        # Remove Gutenberg header
+        start_pattern = r"\*\*\*\s*START OF.*?\*\*\*"
+        start_match = re.search(start_pattern, text, re.IGNORECASE)
+        if start_match:
+            text = text[start_match.end():]
+
+        # Remove Gutenberg footer
+        end_pattern = r"\*\*\*\s*END OF.*?\*\*\*"
+        end_match = re.search(end_pattern, text, re.IGNORECASE)
+        if end_match:
+            text = text[:end_match.start()]
+
+        # Normalize smart punctuation
+        replacements = {
+            "“": '"',
+            "”": '"',
+            "‘": "'",
+            "’": "'",
+            "—": "-",
+            "–": "-",
+        }
+        for k, v in replacements.items():
+            text = text.replace(k, v)
+
+        # Remove bracket-only lines
+        text = re.sub(r"^\[.*?\]$", "", text, flags=re.MULTILINE)
+
+        # Remove excessive blank lines and strip trailing whitespace
+        cleaned = "\n".join(line.rstrip() for line in re.sub(r"\n{3,}", "\n\n", text).split("\n")).strip()
+        
+        book.text = cleaned
+        db.commit()
+    
+    except Exception as e:
+        db.rollback()
+        if book:
+            try:
+                book.process_level = "failed"
+                db.commit()
+            except:
+                db.rollback()
+        
+            raise e
+    finally:
+        db.close()
 

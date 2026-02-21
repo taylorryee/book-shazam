@@ -38,9 +38,10 @@ async def get_book(book:bookCreate,db:Session):
 
 
 async def process_book(book:bookFull,db:Session):
-    already_processed = db.query(Book).filter(Book.gutenberg_id == book.gutenberg_id).first()
-    if already_processed:
-        return already_processed
+    db_book = db.query(Book).get(book.gutenberg_id)
+    
+    if db_book:
+        return db_book
 
     
     text_url = (book.formats.get("text/plain; charset=utf-8") or 
@@ -57,14 +58,14 @@ async def process_book(book:bookFull,db:Session):
     #process_task = clean_text.delay(response.text,book.gutenberg_id) 
     #print("enqued celery task..",process_task.id,flush=True)
 
-    processing_book = Book(gutenberg_id=book.gutenberg_id, title=book.title, authors=book.authors, formats=book.formats, text_url=text_url, cover_image_url=cover_image_url,process_level="processing",text = response.text)
+    processing_book = Book(gutenberg_id=book.gutenberg_id, title=book.title, authors=book.authors, formats=book.formats, text_url=text_url, cover_image_url=cover_image_url,process_level="uploaded",text = response.text)
     
     db.add(processing_book)
     
     try:
         db.commit()
         db.refresh(processing_book)
-        process_task = clean_text.delay(processing_book.id)
+        #process_task = clean_text.delay(processing_book.id)
         return processing_book
     except IntegrityError:
         db.rollback()

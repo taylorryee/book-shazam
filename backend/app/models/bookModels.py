@@ -5,10 +5,24 @@ import enum
 from sqlalchemy.dialects.postgresql import ARRAY,JSONB
 
 
-class ProcessLevel(enum.Enum):
+class BookState(enum.Enum):
     noContext = "noContext" #no book context
     context = "context" #has book context
-    processing = "processing" #currently processing book
+    
+    processed = "processed" #currently processing book
+    
+    uploaded = "uploaded"
+
+    cleaned = "cleaned"
+    cleaning = "cleaning"
+    
+    chunked = "chunked"
+    chunking = "chunking"
+
+class ChunkState(enum.Enum):
+    embedded = "embedded"
+    embedding = "embedding"
+
 
 class Book(Base):
     __tablename__ = "books"
@@ -19,7 +33,7 @@ class Book(Base):
     formats = Column(JSONB,index=True,nullable=True)
     text_url = Column(String,index=True,nullable=True)
     cover_image_url = Column(String,index=True,nullable=True)
-    process_level = Column(Enum(ProcessLevel),index=True)
+    process_level = Column(Enum(BookState),index=True)
     text = Column(Text,nullable=True)
     
     bookChunks = relationship("BookChunks",back_populates="books")
@@ -32,6 +46,7 @@ class BookChunks(Base):
     __tablename__="bookChunks"
     id = Column(Integer,primary_key=True)
     chunk = Column(Text)
+    process_level = Column(Enum(ChunkState),index=True)
     
     book_id = Column(Integer,ForeignKey("books.id"))
     books = relationship("Book",back_populates="bookChunks")

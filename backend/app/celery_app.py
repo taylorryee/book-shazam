@@ -7,4 +7,6 @@ celery = Celery(
     backend="redis://redis:6379/6"  # optional, for storing results
 )
 
+
+
 from app.utils import bookProcessing
