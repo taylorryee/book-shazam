@@ -73,15 +73,17 @@ def clean_text(book_id:int):
 @celery.task
 def clean_text(): #Pull based - checks db for process_level = "uploaded"
     db = SessionLocal()
-
+    set_cleaning = False
+    book = None
     try:
         book = db.query(Book).filter(Book.process_level=='uploaded').with_for_update(skip_locked=True).first() #with_for_update locks db row/rows unitll you commit or rollback
         #and skip_locked tells other workers to skip locked rows and keep searching instead of blocking untill locked row is unlocked
         if not book:
             return 
-        
+
         book.process_level = "cleaning"
         db.commit()
+        set_cleaning = True
         
         text = unicodedata.normalize("NFKC", book.text)
 
@@ -123,7 +125,8 @@ def clean_text(): #Pull based - checks db for process_level = "uploaded"
     
     except Exception as e:
         db.rollback()
-        if book:
+        if book and set_cleaning: #We only need to set to failed if the process_level was set to "cleaning". If it was never set to "cleaning" than it is still in the "uploaded" phase and another worker can pick it up and retry. 
+            #Also we can set process_level to "failed" safelly because its already in the "cleaning" state which means no other worker will pick it up so we dont have to worry about race conditions. 
             try:
                 book.process_level = "failed"
                 db.commit()
