@@ -39,6 +39,7 @@ class Book(Base):
     process_level = Column(Enum(BookState),index=True)
     text = Column(Text,nullable=True)
     claimed_at = Column(DateTime,nullable=True,index=True)
+    chunks = Column(ARRAY(String),index=True,nullable=True)
     
     bookChunks = relationship("BookChunks",back_populates="books")
 

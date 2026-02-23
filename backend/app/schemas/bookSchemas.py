@@ -18,6 +18,7 @@ class bookFull(BaseModel):
     text_url:str | None=None
     cover_image_url:str | None=None
     process_level:str | None
+    text:str | None=None
 
 
     class Config:
