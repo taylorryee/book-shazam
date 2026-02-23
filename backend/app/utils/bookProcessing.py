@@ -3,7 +3,8 @@ from app.celery_app import celery
 from sqlalchemy.orm import Session
 from app.db import SessionLocal
 from app.models.bookModels import Book
-from sqlalchemy import text
+from sqlalchemy import text,or_,and_
+from datetime import datetime,timedelta
 
 
 
@@ -69,19 +70,23 @@ def clean_text(book_id:int):
         db.close()
 
 
+LEASE_TIMEOUT = timedelta(minutes=10)
 
 @celery.task
 def clean_text(): #Pull based - checks db for process_level = "uploaded"
     db = SessionLocal()
     set_cleaning = False
     book = None
+    now = datetime.utcnow()
+    timeout_threshold = now - LEASE_TIMEOUT
     try:
-        book = db.query(Book).filter(Book.process_level=='uploaded').with_for_update(skip_locked=True).first() #with_for_update locks db row/rows unitll you commit or rollback
+        book = db.query(Book).filter(or_(Book.process_level=='uploaded',and_(Book.process_level=="cleaning",or_(Book.claimed_at<timeout_threshold,Book.claimed_at == None)))).with_for_update(skip_locked=True).first() #with_for_update locks db row/rows unitll you commit or rollback
         #and skip_locked tells other workers to skip locked rows and keep searching instead of blocking untill locked row is unlocked
         if not book:
             return 
 
         book.process_level = "cleaning"
+        book.claimed_at = now
         db.commit()
         set_cleaning = True
         
@@ -121,7 +126,10 @@ def clean_text(): #Pull based - checks db for process_level = "uploaded"
         cleaned = "\n".join(line.rstrip() for line in re.sub(r"\n{3,}", "\n\n", text).split("\n")).strip()
         
         book.text = cleaned
+        book.process_level = "cleaned"
+        book.claimed_at = None
         db.commit()
+ 
     
     except Exception as e:
         db.rollback()
@@ -129,6 +137,7 @@ def clean_text(): #Pull based - checks db for process_level = "uploaded"
             #Also we can set process_level to "failed" safelly because its already in the "cleaning" state which means no other worker will pick it up so we dont have to worry about race conditions. 
             try:
                 book.process_level = "failed"
+                book.claimed_at = None
                 db.commit()
             except:
                 db.rollback()

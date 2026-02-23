@@ -1,8 +1,9 @@
-from sqlalchemy import Column,Integer,String,ForeignKey,Enum,UniqueConstraint,Text
+from sqlalchemy import Column,Integer,String,ForeignKey,Enum,UniqueConstraint,Text,DateTime
 from sqlalchemy.orm import relationship
 from app.db import Base
 import enum
 from sqlalchemy.dialects.postgresql import ARRAY,JSONB
+from datetime import datetime
 
 
 class BookState(enum.Enum):
@@ -18,6 +19,8 @@ class BookState(enum.Enum):
     
     chunked = "chunked"
     chunking = "chunking"
+
+    failed = "failed"
 
 class ChunkState(enum.Enum):
     embedded = "embedded"
@@ -35,6 +38,7 @@ class Book(Base):
     cover_image_url = Column(String,index=True,nullable=True)
     process_level = Column(Enum(BookState),index=True)
     text = Column(Text,nullable=True)
+    claimed_at = Column(DateTime,nullable=True,index=True)
     
     bookChunks = relationship("BookChunks",back_populates="books")
 
