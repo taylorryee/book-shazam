@@ -2,10 +2,11 @@ import re, os, unicodedata
 from app.celery_app import celery
 from sqlalchemy.orm import Session
 from app.db import SessionLocal
-from app.models.bookModels import Book
+from app.models.bookModels import Book,BookChunk
 from sqlalchemy import text,or_,and_
 from datetime import datetime,timedelta
 import tiktoken
+from app.config import openai
 
 
 
@@ -75,7 +76,7 @@ def clean_text(): #Pull based - checks db for process_level = "uploaded"
         if book and set_cleaning: #We only need to set to failed if the process_level was set to "cleaning". If it was never set to "cleaning" than it is still in the "uploaded" phase and another worker can pick it up and retry. 
             #Also we can set process_level to "failed" safelly because its already in the "cleaning" state which means no other worker will pick it up so we dont have to worry about race conditions. 
             try:
-                book.process_level = "failed"
+                book.process_level = "failed_cleaning"
                 book.claimed_at = None
                 db.commit()
             except:
@@ -92,23 +93,31 @@ def count_tokens(text: str) -> int:
     return len(encoding.encode(text))
 
 
-def chunk_paragraphs(paragraphs: list[str], max_tokens: int) -> list[str]: #chunk paragraph logic
+def chunk_paragraphs(paragraphs: list[str], max_tokens: int):
     chunks = []
     current_chunk = []
     current_tokens = 0
+    chunk_index = 0
 
     for p in paragraphs:
         p_tokens = count_tokens(p)
-        
-        # Handle very large paragraphs
+
+        # If paragraph itself is too large, split by sentences
         if p_tokens > max_tokens:
-            # Optional: split paragraph by sentences
             sentences = p.split(". ")
             for s in sentences:
                 s_tokens = count_tokens(s)
+
                 if current_tokens + s_tokens > max_tokens:
                     if current_chunk:
-                        chunks.append("\n\n".join(current_chunk))
+                        chunk_text = "\n\n".join(current_chunk)
+                        chunks.append({
+                            "chunk_index": chunk_index,
+                            "text": chunk_text,
+                            "token_count": current_tokens,
+                        })
+                        chunk_index += 1
+
                     current_chunk = [s]
                     current_tokens = s_tokens
                 else:
@@ -116,19 +125,31 @@ def chunk_paragraphs(paragraphs: list[str], max_tokens: int) -> list[str]: #chun
                     current_tokens += s_tokens
             continue
 
-        # If adding this paragraph would exceed max_tokens, finalize chunk
+        # Normal paragraph packing
         if current_tokens + p_tokens > max_tokens:
             if current_chunk:
-                chunks.append("\n\n".join(current_chunk))
+                chunk_text = "\n\n".join(current_chunk)
+                chunks.append({
+                    "chunk_index": chunk_index,
+                    "text": chunk_text,
+                    "token_count": current_tokens,
+                })
+                chunk_index += 1
+
             current_chunk = [p]
             current_tokens = p_tokens
         else:
             current_chunk.append(p)
             current_tokens += p_tokens
 
-    # Append leftover chunk
+    # Flush final chunk
     if current_chunk:
-        chunks.append("\n\n".join(current_chunk))
+        chunk_text = "\n\n".join(current_chunk)
+        chunks.append({
+            "chunk_index": chunk_index,
+            "text": chunk_text,
+            "token_count": current_tokens,
+        })
 
     return chunks
 
@@ -160,7 +181,7 @@ def chunk_text():
         db.rollback()
         if book and set_chunking:
             try:
-                book.process_level = "failed"
+                book.process_level = "failed_chunking"
                 book.claimed_at = None
                 db.commit()
             except:
@@ -169,3 +190,76 @@ def chunk_text():
     
     finally:
         db.close()
+
+
+
+    def embed_batch(texts: list[str]) -> list[list[float]]:
+        response = openai.embeddings.create(
+            model="text-embedding-3-small",
+            input=texts,
+        )
+        return [item.embedding for item in response.data]
+    
+    def max_token_batch(texts,max_batch_size):
+        batch = []
+        batch_size = 0
+
+        for chunk in texts:
+            cur = count_tokens(chunk["text"])
+            if cur + batch_size > max_batch_size:
+                if batch:
+                    yield batch
+                batch = [chunk["text"]]
+                batch_size = cur
+            else:
+                batch.append(chunk["text"])
+                batch_size += cur
+        if batch:
+            yield batch
+
+
+    @celery.task
+    def embed_chunks():
+        db = SessionLocal()
+        now = datetime.utcnow()
+        timeout_threshold = now - LEASE_TIMEOUT
+        set_embedding = False
+        try:
+            book = db.query(Book).filter(or_(Book.process_level=='chunked',and_(Book.process_level=="embedding",or_(Book.claimed_at<timeout_threshold,Book.claimed_at == None)))).with_for_update(skip_locked=True).first()
+            if not book:
+                return
+
+            book.process_level = "embedding"
+            book.claimed_at = now
+            db.commit()
+            set_embedding = True
+            
+            all_embeddings = []
+            for batch in max_token_batch(book.chunks,100000):
+                all_embeddings.extend(embed_batch(batch))
+            
+            for chunk,embedding in zip(book.chunks,all_embeddings):
+                newBookChunk = BookChunk(book_id = book.id, chunk_index = chunk["chunk_index"],text = chunk["text"],embedding = embedding)
+                db.add(newBookChunk)
+            
+
+            book.process_level = "embedded"
+            book.claimed_at = None
+            db.commit()
+
+
+        except Exception as e:
+            db.rollback()
+            if set_embedding:
+                try:
+                    book.process_level = "embedding_failed"
+                    book.claimed_at = None
+                    db.commit()
+                except:
+                    db.rollback()
+
+            raise e
+
+        
+        finally:
+            db.close()

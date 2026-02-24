@@ -9,6 +9,14 @@ class bookCreate(BaseModel):
 class person(BaseModel):
     name: str
 
+class BookChunk(BaseModel):
+    chunk_index:int
+    text:str
+    token_count:int
+    embedding:List[float] | None = None
+    class Config:
+        from_attributes = True
+
 class bookFull(BaseModel):
     id:int | None=None
     gutenberg_id:int | None=None
@@ -18,7 +26,8 @@ class bookFull(BaseModel):
     text_url:str | None=None
     cover_image_url:str | None=None
     process_level:str | None
-    text:str | None=None
+
+    chunks:List[BookChunk] | None=None
 
 
     class Config:

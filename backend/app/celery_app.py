@@ -11,7 +11,11 @@ celery = Celery(
 celery.conf.beat_schedule = {
     "check_for_uploaded_books": {
         "task": "app.utils.bookProcessing.clean_text",
-        "schedule": 10.0,  # midnight UTC
+        "schedule": 10.0,  #
+    },
+    "chuck_for_cleaned_books":{
+        "task":"app.utils.bookProcessing.chunk_text",
+        "schedule":10.0,
     },
 }
 

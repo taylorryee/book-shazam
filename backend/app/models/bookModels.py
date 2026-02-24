@@ -4,7 +4,7 @@ from app.db import Base
 import enum
 from sqlalchemy.dialects.postgresql import ARRAY,JSONB
 from datetime import datetime
-
+from pgvector.sqlalchemy import Vector
 
 class BookState(enum.Enum):
     noContext = "noContext" #no book context
@@ -20,7 +20,12 @@ class BookState(enum.Enum):
     chunked = "chunked"
     chunking = "chunking"
 
-    failed = "failed"
+    failed_cleaning = "failed_cleaning"
+    failed_chunking = "failed_chunking"
+    failed_embedding = "failed_embedding"
+
+    embedding = "embedding"
+    embedded = "embedded"
 
 class ChunkState(enum.Enum):
     embedded = "embedded"
@@ -39,20 +44,21 @@ class Book(Base):
     process_level = Column(Enum(BookState),index=True)
     text = Column(Text,nullable=True)
     claimed_at = Column(DateTime,nullable=True,index=True)
-    chunks = Column(ARRAY(String),index=True,nullable=True)
+    chunks = Column(JSONB,nullable=True)
     
-    bookChunks = relationship("BookChunks",back_populates="books")
+    bookChunks = relationship("BookChunk",back_populates="books")
 
     __table__args=(
         UniqueConstraint('title','authors')
     )
 
-class BookChunks(Base):
+class BookChunk(Base):
     __tablename__="bookChunks"
     id = Column(Integer,primary_key=True)
-    chunk = Column(Text)
-    process_level = Column(Enum(ChunkState),index=True)
-    
+    chunk_index = Column(Integer,index=True)
+    text = Column(Text)
+    embedding = Column(Vector(1536))
+
     book_id = Column(Integer,ForeignKey("books.id"))
     books = relationship("Book",back_populates="bookChunks")
     
