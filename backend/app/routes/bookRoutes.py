@@ -6,7 +6,8 @@ from app.db import get_db
 from app.services import bookServices as service
 from app.celery_app import celery
 from celery.result import AsyncResult
-from app.models.bookModels import Book
+from app.models.bookModels import Book,BookChunk
+from app.utils.bookProcessing import max_token_batch,embed_batch
 
 router = APIRouter(prefix = "/book",tags=["Book Routes"])
 
@@ -39,3 +40,15 @@ async def get_task_status(task_id: str):
         "status": result.status,
         "result": str(result.result)
     }
+
+
+@router.post("/embeddingTest")
+def embed_book(id, db: Session=Depends(get_db)):
+    book = db.query(Book).get(id)
+    all_embeddings = []
+
+    for batch in max_token_batch(book.chunks, 100_000):
+        print("BATCHHH",batch,flush=True)
+        all_embeddings.extend(batch)
+    print(len(book.chunks),"len book",len(all_embeddings),flush=True)
+    return len(book.chunks) == len(all_embeddings)
