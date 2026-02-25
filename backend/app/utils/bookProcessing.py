@@ -149,6 +149,7 @@ def chunk_paragraphs(paragraphs: list[str], max_tokens: int):
             "chunk_index": chunk_index,
             "text": chunk_text,
             "token_count": current_tokens,
+            "embedding":None
         })
 
     return chunks
@@ -226,7 +227,7 @@ def embed_chunks():
     timeout_threshold = now - LEASE_TIMEOUT
     set_embedding = False
     try:
-        book = db.query(Book).filter(or_(Book.process_level=='chunked',and_(Book.process_level=="embedding",or_(Book.claimed_at<timeout_threshold,Book.claimed_at == None)))).with_for_update(skip_locked=True).first()
+        book = db.query(Book).filter(Book.process_level=='chunked').with_for_update(skip_locked=True).first()
         if not book:
             return
 
@@ -236,11 +237,13 @@ def embed_chunks():
         set_embedding = True
             
         all_embeddings = []
-        for batch in max_token_batch(book.chunks,100000):
-            all_embeddings.extend(embed_batch(batch))
+        for batch in max_token_batch(book.chunks,100_000):
+            embedded = embed_batch(batch)
+            all_embeddings.extend(embedded)
             
         for chunk,embedding in zip(book.chunks,all_embeddings):
             newBookChunk = BookChunk(book_id = book.id, chunk_index = chunk["chunk_index"],text = chunk["text"],embedding = embedding)
+            chunk["embedding"] = embedding
             db.add(newBookChunk)
             
 

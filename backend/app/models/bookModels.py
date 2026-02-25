@@ -52,7 +52,7 @@ class BookChunk(Base):
     id = Column(Integer,primary_key=True)
     chunk_index = Column(Integer,index=True)
     text = Column(Text)
-    embedding = Column(Vector(1536),index=True)
+    embedding = Column(Vector(1536))
 
     book_id = Column(Integer,ForeignKey("books.id"))
     books = relationship("Book",back_populates="bookChunks")
@@ -64,6 +64,3 @@ class UserBook(Base):
     title = Column(String,)
     cleaned_file = Column(Text)
 
-class ProccessedBook(Base):
-    __tablename__ = "processedBooks"
-    id = Column(Integer,primary_key=True)

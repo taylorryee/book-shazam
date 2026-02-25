@@ -11,13 +11,21 @@ from app.utils.bookProcessing import max_token_batch,embed_batch
 
 router = APIRouter(prefix = "/book",tags=["Book Routes"])
 
-@router.get("/",response_model = bookFull)
-def get_book_test(id:int,db:Session=Depends(get_db)):
-    book = db.query(Book).get(id)
-    print(book.chunks,flush=True)
-    if not book:
-        raise HTTPException(400,"aw man")
-    return book
+@router.get("/")
+def get_book_test(id: int, db: Session = Depends(get_db)):
+    chunks = db.query(BookChunk).filter(BookChunk.book_id == id).all()
+
+    if not chunks:
+        raise HTTPException(400, "aw man")
+
+    response = []
+    for chunk in chunks:
+        print("CHUNK ",chunk.embedding)
+        print("\nText",chunk.text)
+
+   
+
+    return response
 
 
 @router.post("/",response_model=List[bookFull])
@@ -48,7 +56,8 @@ def embed_book(id, db: Session=Depends(get_db)):
     all_embeddings = []
 
     for batch in max_token_batch(book.chunks, 100_000):
-        print("BATCHHH",batch,flush=True)
-        all_embeddings.extend(batch)
+        embedded = embed_batch(batch)
+        print(embedded,flush=True)
+        all_embeddings.extend(embedded)
     print(len(book.chunks),"len book",len(all_embeddings),flush=True)
     return len(book.chunks) == len(all_embeddings)
