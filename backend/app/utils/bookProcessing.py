@@ -159,6 +159,7 @@ def chunk_text():
     set_chunking = False
     now = datetime.utcnow()
     timeout_threshold = now - LEASE_TIMEOUT
+    book = None
     try:
         book = db.query(Book).filter(or_(Book.process_level=='cleaned',and_(Book.process_level=="chunking",or_(Book.claimed_at<timeout_threshold,Book.claimed_at == None)))).with_for_update(skip_locked=True).first()
         if not book:
@@ -193,73 +194,73 @@ def chunk_text():
 
 
 
-    def embed_batch(texts: list[str]) -> list[list[float]]:
-        response = openai.embeddings.create(
-            model="text-embedding-3-small",
-            input=texts,
-        )
-        return [item.embedding for item in response.data]
+def embed_batch(texts: list[str]) -> list[list[float]]:
+    response = openai.embeddings.create(
+        model="text-embedding-3-small",
+        input=texts,
+    )
+    return [item.embedding for item in response.data]
     
-    def max_token_batch(texts,max_batch_size):
-        batch = []
-        batch_size = 0
+def max_token_batch(texts,max_batch_size):
+    batch = []
+    batch_size = 0
 
-        for chunk in texts:
-            cur = count_tokens(chunk["text"])
-            if cur + batch_size > max_batch_size:
-                if batch:
-                    yield batch
-                batch = [chunk["text"]]
-                batch_size = cur
-            else:
-                batch.append(chunk["text"])
-                batch_size += cur
-        if batch:
-            yield batch
+    for chunk in texts:
+        cur = count_tokens(chunk["text"])
+        if cur + batch_size > max_batch_size:
+            if batch:
+                yield batch
+            batch = [chunk["text"]]
+            batch_size = cur
+        else:
+            batch.append(chunk["text"])
+            batch_size += cur
+    if batch:
+        yield batch
 
 
-    @celery.task
-    def embed_chunks():
-        db = SessionLocal()
-        now = datetime.utcnow()
-        timeout_threshold = now - LEASE_TIMEOUT
-        set_embedding = False
-        try:
-            book = db.query(Book).filter(or_(Book.process_level=='chunked',and_(Book.process_level=="embedding",or_(Book.claimed_at<timeout_threshold,Book.claimed_at == None)))).with_for_update(skip_locked=True).first()
-            if not book:
-                return
+@celery.task
+def embed_chunks():
+    db = SessionLocal()
+    now = datetime.utcnow()
+    timeout_threshold = now - LEASE_TIMEOUT
+    set_embedding = False
+    try:
+        book = db.query(Book).filter(or_(Book.process_level=='chunked',and_(Book.process_level=="embedding",or_(Book.claimed_at<timeout_threshold,Book.claimed_at == None)))).with_for_update(skip_locked=True).first()
+        if not book:
+            return
 
-            book.process_level = "embedding"
-            book.claimed_at = now
-            db.commit()
-            set_embedding = True
+        book.process_level = "embedding"
+        book.claimed_at = now
+        db.commit()
+        set_embedding = True
             
-            all_embeddings = []
-            for batch in max_token_batch(book.chunks,100000):
-                all_embeddings.extend(embed_batch(batch))
+        all_embeddings = []
+        for batch in max_token_batch(book.chunks,100000):
+            all_embeddings.extend(embed_batch(batch))
             
-            for chunk,embedding in zip(book.chunks,all_embeddings):
-                newBookChunk = BookChunk(book_id = book.id, chunk_index = chunk["chunk_index"],text = chunk["text"],embedding = embedding)
-                db.add(newBookChunk)
+        for chunk,embedding in zip(book.chunks,all_embeddings):
+            newBookChunk = BookChunk(book_id = book.id, chunk_index = chunk["chunk_index"],text = chunk["text"],embedding = embedding)
+            db.add(newBookChunk)
             
 
-            book.process_level = "embedded"
-            book.claimed_at = None
-            db.commit()
+        book.process_level = "embedded"
+        book.claimed_at = None
+        db.commit()
 
 
-        except Exception as e:
-            db.rollback()
-            if set_embedding:
-                try:
-                    book.process_level = "embedding_failed"
-                    book.claimed_at = None
-                    db.commit()
-                except:
-                    db.rollback()
+    except Exception as e:
+        db.rollback()
+        if set_embedding:
+            try:
+                book.process_level = "embedding_failed"
+                book.claimed_at = None
+                db.commit()
+            except:
+                db.rollback()
 
-            raise e
+        raise e
 
         
-        finally:
-            db.close()
+    finally:
+        db.close()

@@ -27,11 +27,6 @@ class BookState(enum.Enum):
     embedding = "embedding"
     embedded = "embedded"
 
-class ChunkState(enum.Enum):
-    embedded = "embedded"
-    embedding = "embedding"
-
-
 class Book(Base):
     __tablename__ = "books"
     id = Column(Integer,primary_key=True)
@@ -57,7 +52,7 @@ class BookChunk(Base):
     id = Column(Integer,primary_key=True)
     chunk_index = Column(Integer,index=True)
     text = Column(Text)
-    embedding = Column(Vector(1536))
+    embedding = Column(Vector(1536),index=True)
 
     book_id = Column(Integer,ForeignKey("books.id"))
     books = relationship("Book",back_populates="bookChunks")

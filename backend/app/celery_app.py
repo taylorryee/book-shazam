@@ -13,10 +13,14 @@ celery.conf.beat_schedule = {
         "task": "app.utils.bookProcessing.clean_text",
         "schedule": 10.0,  #
     },
-    "chuck_for_cleaned_books":{
+    "check_for_cleaned_books":{
         "task":"app.utils.bookProcessing.chunk_text",
         "schedule":10.0,
     },
+    "check_for_chunked_books":{
+        "task":"app.utils.bookProcessing.embed_chunks",
+        "schedule":10.0,
+    }
 }
 
 
