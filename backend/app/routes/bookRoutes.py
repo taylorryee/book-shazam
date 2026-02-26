@@ -23,8 +23,6 @@ def get_book_test(id: int, db: Session = Depends(get_db)):
         print("CHUNK ",chunk.embedding)
         print("\nText",chunk.text)
 
-   
-
     return response
 
 
@@ -61,3 +59,6 @@ def embed_book(id, db: Session=Depends(get_db)):
         all_embeddings.extend(embedded)
     print(len(book.chunks),"len book",len(all_embeddings),flush=True)
     return len(book.chunks) == len(all_embeddings)
+
+
+

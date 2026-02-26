@@ -1,4 +1,4 @@
-from sqlalchemy import Column,Integer,String,ForeignKey,Enum,UniqueConstraint,Text,DateTime
+from sqlalchemy import Column,Integer,String,ForeignKey,Enum,UniqueConstraint,Text,DateTime,Index
 from sqlalchemy.orm import relationship
 from app.db import Base
 import enum
@@ -41,21 +41,32 @@ class Book(Base):
     claimed_at = Column(DateTime,nullable=True,index=True)
     chunks = Column(JSONB,nullable=True)
     
-    bookChunks = relationship("BookChunk",back_populates="books")
+    book_chunks = relationship("BookChunk",back_populates="books")
 
     __table__args=(
         UniqueConstraint('title','authors')
     )
 
+
+
 class BookChunk(Base):
-    __tablename__="bookChunks"
+    __tablename__="book_chunks"
     id = Column(Integer,primary_key=True)
     chunk_index = Column(Integer,index=True)
     text = Column(Text)
     embedding = Column(Vector(1536))
 
     book_id = Column(Integer,ForeignKey("books.id"))
-    books = relationship("Book",back_populates="bookChunks")
+    books = relationship("Book",back_populates="book_chunks")
+
+    __table__args=(
+        Index(
+            "bookchunks_embedding_hnsw_idx",
+            "embedding",
+            postgresql_using="hnsw",
+            postgresql_ops={"embedding": "vector_cosine_ops"},
+        ),
+    )
     
 
 class UserBook(Base):

@@ -243,7 +243,6 @@ def embed_chunks():
             
         for chunk,embedding in zip(book.chunks,all_embeddings):
             newBookChunk = BookChunk(book_id = book.id, chunk_index = chunk["chunk_index"],text = chunk["text"],embedding = embedding)
-            chunk["embedding"] = embedding
             db.add(newBookChunk)
             
 
