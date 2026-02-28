@@ -1,30 +1,34 @@
-<<<<<<< HEAD
+# -----------------------
 # Python
+# -----------------------
 backend/venv/
 __pycache__/
 *.pyc
 .env
 
-# Node
-frontend/node_modules/
-frontend/dist/
+# -----------------------
+# Node / Frontend
+# -----------------------
+frontend/node_modules/      # npm packages
+frontend/dist/              # build output
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# OS
-.DS_Store
-=======
-# Virtual environment
-venv/
+# -----------------------
+# Expo / React Native
+# -----------------------
+.expo/                      # Expo local cache
+.expo-shared/               # local metadata
+*.tsbuildinfo               # TypeScript incremental cache
 
-# Python cache
-__pycache__/
-*.pyc
+# -----------------------
+# OS / Editor
+# -----------------------
+.DS_Store                   # macOS file system junk
+.vscode/                     # VSCode settings
 
-# Environment variables
-.env
-
-# Mac junk
-.DS_Store
-
-# VSCode
-.vscode/
-
+# -----------------------
+# Environment
+# -----------------------
+.env                        # secret keys
