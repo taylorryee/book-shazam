@@ -5,6 +5,7 @@ from app.db import SessionLocal
 from sqlalchemy.orm import Session
 from app.models.bookModels import BookChunk,Book
 from app.schemas.bookSchemas import bookFull
+import asyncio
 
 
 def relevant_chunks(embedding: list[float],book_id:int, db: Session):
@@ -12,29 +13,37 @@ def relevant_chunks(embedding: list[float],book_id:int, db: Session):
     return [chunk.text for chunk in relevant]
 
 
-celery.task()
-def process_audio(file_path:str,book_id:int):
-    db = SessionLocal()
+def db_work(book_id:int,embedding:list[float]):
+    db=SessionLocal()
     try:
+        book = db.get(Book,book_id)
+        if not book:
+            return None
+        context = relevant_chunks(embedding,book_id,db)
+        return context,book
+    finally:
+        db.close()
 
+async def process_audio(file_path:str,book_id:int):
+    try:
         with open(file_path,"rb") as f:
-            transcript = openai.audio.transcriptions.create( 
+            transcript = await openai.audio.transcriptions.create( 
                 model="whisper-1",
                 file=f
             )
 
-        embedding_response = openai.embeddings.create(
+        embedding_response = await openai.embeddings.create(
             model="text-embedding-3-small",
             input=transcript.text,
         )
 
         embedding = embedding_response.data[0].embedding
 
-        context = relevant_chunks(embedding,book_id,db)
+        context,book = await asyncio.to_thread(db_work,book_id,embedding)
+       
         formatted_context = "\n\n".join(f"Passage {i+1}:\n{chunk}" for i, chunk in enumerate(context))
         
-        book = db.get(Book,book_id)
-        response = openai.responses.create(
+        response = await openai.responses.create(
             model = "gpt-5-nano",
             input=[
             {
@@ -70,5 +79,4 @@ def process_audio(file_path:str,book_id:int):
         raise e
     finally:
         os.remove(file_path)
-        db.close()
     
