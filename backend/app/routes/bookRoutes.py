@@ -28,6 +28,7 @@ def get_book_test(id: int, db: Session = Depends(get_db)):
 
 @router.post("/",response_model=List[bookFull])
 async def get_book(book:bookCreate,db:Session=Depends(get_db)):
+    
     return await service.get_book(book,db)
 
 

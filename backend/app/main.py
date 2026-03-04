@@ -2,8 +2,23 @@ from fastapi import FastAPI, Depends
 from app.routes.audioRoutes import router as audioRouter
 from app.routes.bookRoutes import router as bookRouter
 from app.db import Base,engine
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+origins = [
+    "http://localhost:19006",  # Expo web (optional)
+    "http://localhost:3000",   # React web (optional)
+    "*",  # allow all during development
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.on_event("startup")
 def on_startup():
@@ -12,3 +27,7 @@ def on_startup():
 
 app.include_router(audioRouter)
 app.include_router(bookRouter)
+
+
+
+

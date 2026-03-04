@@ -12,8 +12,9 @@ export default function Index() {
       }}
     >
       <Text>DA BOOK SHAZAM</Text>
-      <Button title="Go to Profile" onPress={() => router.push('/book')} />
+      <Button title="Start reading" onPress={() => router.push('/findBook')} />
     </View>
   );
 }
+
 

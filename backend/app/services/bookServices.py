@@ -34,7 +34,8 @@ async def get_book(book:bookCreate,db:Session):
     ans = []
     for book in data["results"]: #Get every book that shows up for what the user requested
         authors_list = [author["name"] for author in book["authors"]]
-        ans.append(bookFull(gutenberg_id=book["id"],title=book["title"],authors=authors_list,formats=book["formats"],process_level=None))
+        cover_image_url = book["formats"].get("image/jpeg")
+        ans.append(bookFull(gutenberg_id=book["id"],title=book["title"],authors=authors_list,formats=book["formats"],cover_image_url=cover_image_url,process_level=None))
     
     return ans
 
