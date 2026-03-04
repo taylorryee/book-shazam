@@ -61,4 +61,10 @@ def embed_book(id, db: Session=Depends(get_db)):
     return len(book.chunks) == len(all_embeddings)
 
 
+async def start_reading(book:bookFull,audio:UploadFile=File(...),db:Session=Depends(get_db)):
+    start = await service.start_reading(book,audio,db)
+
+    return start
+
+
 
