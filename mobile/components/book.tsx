@@ -1,9 +1,10 @@
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet,Pressable } from "react-native";
 import { BookFull } from "../store";
 import { Image } from "expo-image";
 
 const COVER_WIDTH = 120;
 const COVER_HEIGHT = 180;
+const CONTAINER_HEIGHT = 200
 
 type BookProps = { book: BookFull };
 
@@ -24,6 +25,7 @@ export default function Book({ book }: BookProps) {
 const styles = StyleSheet.create({
   container: {
     width: COVER_WIDTH,
+    height:CONTAINER_HEIGHT,
   },
   cover: {
     width: COVER_WIDTH,
@@ -31,6 +33,7 @@ const styles = StyleSheet.create({
   },
   title: {
     width: "100%",
+    height:"100%",
     marginTop: 6,
     flexWrap: "wrap",
   },
