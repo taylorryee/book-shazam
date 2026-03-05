@@ -51,7 +51,7 @@ export default function findBook() {
       router.push("/bookSelection");
     } catch (e) {
       console.error("Failed to fetch books:", e);
-      setError("Could not fetch books. Please try again.");
+      setError("Could not find that book");
     } finally {
       setLoading(false);
     }

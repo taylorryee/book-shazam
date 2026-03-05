@@ -1,17 +1,37 @@
-import {View,Text} from 'react-native'
-import {BookFull,BookChunk} from '../store'
-import {Image} from 'expo-image'
+import { View, Text, StyleSheet } from "react-native";
+import { BookFull } from "../store";
+import { Image } from "expo-image";
 
-type BookProps = {book:BookFull}
-export default function Book({book}:BookProps){
-    
-    return(
-        <View>
-            <Image 
-                source={{ uri: book.cover_image_url ?? "https://picsum.photos/300/400" }}
-                style={{ width: 120, height: 180 }}
-            />
-            <Text>{book.title},{book.authors}</Text>
-        </View>
-    );
+const COVER_WIDTH = 120;
+const COVER_HEIGHT = 180;
+
+type BookProps = { book: BookFull };
+
+export default function Book({ book }: BookProps) {
+  return (
+    <View style={styles.container}>
+      <Image
+        source={{ uri: book.cover_image_url ?? "https://picsum.photos/300/400" }}
+        style={styles.cover}
+      />
+      <Text style={styles.title}>
+        {book.title},{book.authors}
+      </Text>
+    </View>
+  );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    width: COVER_WIDTH,
+  },
+  cover: {
+    width: COVER_WIDTH,
+    height: COVER_HEIGHT,
+  },
+  title: {
+    width: "100%",
+    marginTop: 6,
+    flexWrap: "wrap",
+  },
+});
