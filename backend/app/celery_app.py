@@ -8,20 +8,20 @@ celery = Celery(
 )
 
 
-# celery.conf.beat_schedule = {
-#     "check_for_uploaded_books": {
-#         "task": "app.utils.bookProcessing.clean_text",
-#         "schedule": 10.0,  #
-#     },
-#     "check_for_cleaned_books":{
-#         "task":"app.utils.bookProcessing.chunk_text",
-#         "schedule":10.0,
-#     },
-#     "check_for_chunked_books":{
-#         "task":"app.utils.bookProcessing.embed_chunks",
-#         "schedule":10.0,
-#     }
-# }
+celery.conf.beat_schedule = {
+    "check_for_uploaded_books": {
+        "task": "app.utils.bookProcessing.clean_text",
+        "schedule": 10.0,  #
+    },
+    "check_for_cleaned_books":{
+        "task":"app.utils.bookProcessing.chunk_text",
+        "schedule":10.0,
+    },
+    "check_for_chunked_books":{
+        "task":"app.utils.bookProcessing.embed_chunks",
+        "schedule":10.0,
+    }
+}
 
 
 

@@ -41,9 +41,10 @@ async def get_book(book:bookCreate,db:Session):
 
 
 async def process_book(book:bookFull,db:Session):
-    db_book = db.query(Book).get(book.gutenberg_id)
+    db_book = db.query(Book).filter(Book.gutenberg_id==book.gutenberg_id).first()
     
     if db_book:
+        
         return db_book
 
     

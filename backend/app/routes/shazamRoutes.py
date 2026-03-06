@@ -1,13 +1,20 @@
 from fastapi import APIRouter,Depends, File, UploadFile
 from sqlalchemy.orm import Session
 from app.schemas.audioSchemas import audioReturn
-from app.services import audioServices as service
+from app.services import shazamServices as service
 from app.db import get_db
 from app.config import openai
 from app.utils.rag import relevant_chunks
 from app.models.bookModels import Book,BookChunk
+from app.schemas.bookSchemas import bookFull
+router = APIRouter(prefix = "/shazam", tags=["Shazam routes"])
 
-router = APIRouter(prefix = "/audio", tags=["Audio routes"])
+@router.post("/")
+async def start_reading_text(book:bookFull,text:str,db:Session=Depends(get_db)):
+    start = await service.start_reading(book,text,db)
+
+    return start
+
 
 @router.post("/upload",response_model = audioReturn)
 async def upload_audio(book_id:int,audio:UploadFile=File(...)):
@@ -15,8 +22,8 @@ async def upload_audio(book_id:int,audio:UploadFile=File(...)):
 
     return audio
 
-@router.post("test")
-def test(text:str,book_id:int,db:Session=Depends(get_db)):
+@router.post("/upload_text")
+def upload_text(text:str,book_id:int,db:Session=Depends(get_db)):
 
         embedding_response = openai.embeddings.create(
             model="text-embedding-3-small",
