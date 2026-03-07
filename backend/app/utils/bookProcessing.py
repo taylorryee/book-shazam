@@ -115,6 +115,7 @@ def chunk_paragraphs(paragraphs: list[str], max_tokens: int):
                             "chunk_index": chunk_index,
                             "text": chunk_text,
                             "token_count": current_tokens,
+            
                         })
                         chunk_index += 1
 

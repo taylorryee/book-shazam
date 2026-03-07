@@ -7,18 +7,25 @@ import {useBookStore} from "../store"
 export default function Shazam(){
     const [startText,setStartText] = useState("")
     const SelectedBook = useBookStore((state)=>state.selectedBook)
+    const setBookPosition = useBookStore((state)=>state.setBookPosition)
+    const BookPosition = useBookStore((state)=>state.bookPosition)
+    
     if (!SelectedBook || !SelectedBook.id){
         return null
     }
     const bookID = SelectedBook.id
+    
     const upload_text = async () =>{
-        const response = api.post("/shazam/upload_text",{startText,bookID})
+        const response = await api.post("/shazam/start_text", SelectedBook, {params: { text: startText },});
+        setBookPosition(response.data)
+
     }
     //Upload text is were we are - ne
+    useEffect(()=>console.log(BookPosition),[BookPosition])
     return(
         <View>
             <TextInput placeholder="Input sentence that you are on" value = {startText} onChangeText = {setStartText} style={styles.textInput}/>
-            <Button title = "start reading" onPress = {()=>upload_text}/> 
+            <Button title = "start reading" onPress = {upload_text}/> 
         </View>
     );
 }

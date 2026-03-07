@@ -9,10 +9,11 @@ from app.models.bookModels import Book,BookChunk
 from app.schemas.bookSchemas import bookFull
 router = APIRouter(prefix = "/shazam", tags=["Shazam routes"])
 
-@router.post("/")
-async def start_reading_text(book:bookFull,text:str,db:Session=Depends(get_db)):
-    start = await service.start_reading(book,text,db)
-
+@router.post("/start_text")
+def start_reading_text(book:bookFull,text:str,db:Session=Depends(get_db)):
+    start = service.start_reading_text(book,text,db)
+    if not start:
+         return None
     return start
 
 

@@ -16,16 +16,19 @@ export type BookFull = {
 type BookStore = {
   books: BookFull[];
   selectedBook:BookFull | null;
+  bookPosition:number | null;
   setBooks: (books: BookFull[]) => void;
   addBook: (book: BookFull) => void;
   clearBooks: () => void;
   setSelectedBook:(book:BookFull | null)=>void
+  setBookPosition:(position:number | null)=>void
 };
 // Create your Zustand store here
 
 export const useBookStore = create<BookStore>((set) => ({
   books: [],
   selectedBook:null,
+  bookPosition:null,
 
   setBooks: (books) => set({ books }),
 
@@ -37,6 +40,7 @@ export const useBookStore = create<BookStore>((set) => ({
   clearBooks: () => set({ books: [] }),
 
   setSelectedBook:(book)=>set({selectedBook:book}),
+  setBookPosition:(position)=>set({bookPosition:position})
 
 
 }));
