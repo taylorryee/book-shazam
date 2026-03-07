@@ -14,10 +14,11 @@ export default function Shazam(){
     const upload_text = async () =>{
         const response = api.post("/shazam/upload_text",{startText,bookID})
     }
+    //Upload text is were we are - ne
     return(
         <View>
             <TextInput placeholder="Input sentence that you are on" value = {startText} onChangeText = {setStartText} style={styles.textInput}/>
-            <Button title = "start reading" onPress = {()=>upload_text}/>
+            <Button title = "start reading" onPress = {()=>upload_text}/> 
         </View>
     );
 }

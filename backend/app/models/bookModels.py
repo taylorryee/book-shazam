@@ -1,10 +1,11 @@
-from sqlalchemy import Column,Integer,String,ForeignKey,Enum,UniqueConstraint,Text,DateTime,Index
+from sqlalchemy import Column,Integer,String,ForeignKey,Enum,UniqueConstraint,Text,DateTime,Index,Computed
 from sqlalchemy.orm import relationship
 from app.db import Base
 import enum
 from sqlalchemy.dialects.postgresql import ARRAY,JSONB
 from datetime import datetime
 from pgvector.sqlalchemy import Vector
+from sqlalchemy.dialects.postgresql import TSVECTOR
 
 class BookState(enum.Enum):
     noContext = "noContext" #no book context
@@ -55,19 +56,30 @@ class BookChunk(Base):
     chunk_index = Column(Integer,index=True)
     text = Column(Text)
     embedding = Column(Vector(1536))
+    text_search = Column(
+        TSVECTOR,
+        Computed("to_tsvector('english', text)", persisted=True)
+    )
 
     book_id = Column(Integer,ForeignKey("books.id"))
     books = relationship("Book",back_populates="book_chunks")
 
-    __table__args=(
+    __table_args__=(
         Index(
             "bookchunks_embedding_hnsw_idx",
             "embedding",
             postgresql_using="hnsw",
             postgresql_ops={"embedding": "vector_cosine_ops"},
         ),
+        Index(
+            "idx_chunks_text_search",
+            "text_search",
+            postgresql_using="gin"
+        ),
+
     )
     
+
 
 class UserBook(Base):
     __tablename__="userBooks"
