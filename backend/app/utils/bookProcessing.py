@@ -7,6 +7,7 @@ from sqlalchemy import text,or_,and_
 from datetime import datetime,timedelta
 import tiktoken
 from app.config import openai
+from nltk.tokenize import sent_tokenize
 
 
 
@@ -104,7 +105,8 @@ def chunk_paragraphs(paragraphs: list[str], max_tokens: int):
 
         # If paragraph itself is too large, split by sentences
         if p_tokens > max_tokens:
-            sentences = p.split(". ")
+            #sentences = p.split(". ")
+            sentences = sent_tokenize(p)
             for s in sentences:
                 s_tokens = count_tokens(s)
 

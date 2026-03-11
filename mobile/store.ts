@@ -13,15 +13,30 @@ export type BookFull = {
 
 };
 
+export type BookFullText = {
+  id: number | null;
+  gutenberg_id: number | null;
+  title: string;
+  authors: string[];
+  formats: Record<string, string>;
+  text_url: string | null;
+  cover_image_url: string | null;
+  process_level: string | null;
+  text:string | null;
+}
+
 type BookStore = {
-  books: BookFull[];
-  selectedBook:BookFull | null;
+  books: BookFullText[];
+  selectedBook:BookFullText | null;
   bookPosition:number | null;
-  setBooks: (books: BookFull[]) => void;
-  addBook: (book: BookFull) => void;
+  bookText:string | null;
+  
+  setBooks: (books: BookFullText[]) => void;
+  addBook: (book: BookFullText) => void;
   clearBooks: () => void;
-  setSelectedBook:(book:BookFull | null)=>void
+  setSelectedBook:(book:BookFullText | null)=>void
   setBookPosition:(position:number | null)=>void
+  setBookText:(text:string | null)=>void
 };
 // Create your Zustand store here
 
@@ -29,6 +44,7 @@ export const useBookStore = create<BookStore>((set) => ({
   books: [],
   selectedBook:null,
   bookPosition:null,
+  bookText:null,
 
   setBooks: (books) => set({ books }),
 
@@ -40,7 +56,8 @@ export const useBookStore = create<BookStore>((set) => ({
   clearBooks: () => set({ books: [] }),
 
   setSelectedBook:(book)=>set({selectedBook:book}),
-  setBookPosition:(position)=>set({bookPosition:position})
+  setBookPosition:(position)=>set({bookPosition:position}),
+  setBookText:(text=>set({bookText:text})),
 
 
 }));

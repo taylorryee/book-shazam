@@ -72,3 +72,6 @@ def upload_text(text:str,book_id:int,db:Session=Depends(get_db)):
                 "context":formatted_context}
 
 
+@router.get("/stream_book")
+def stream_book(book:bookFull,start_position:int,db:Session=Depends(get_db)):
+     return service.stream_book(book,start_position,db)

@@ -1,5 +1,5 @@
 import {useState,useEffect} from "react"
-import {View,Button,TextInput,StyleSheet} from "react-native"
+import {View,Button,TextInput,StyleSheet,Text,ScrollView} from "react-native"
 import api from "../api"
 import {useBookStore} from "../store"
 
@@ -20,8 +20,21 @@ export default function Shazam(){
         setBookPosition(response.data)
 
     }
-    //Upload text is were we are - ne
+
     useEffect(()=>console.log(BookPosition),[BookPosition])
+
+    if(BookPosition){
+        return(
+            <ScrollView>
+            <View>
+                <Text>
+                    {SelectedBook.text}
+                </Text>
+
+            </View>
+            </ScrollView>
+        );
+    }
     return(
         <View>
             <TextInput placeholder="Input sentence that you are on" value = {startText} onChangeText = {setStartText} style={styles.textInput}/>

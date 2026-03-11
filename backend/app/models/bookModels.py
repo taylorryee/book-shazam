@@ -44,8 +44,11 @@ class Book(Base):
     
     book_chunks = relationship("BookChunk",back_populates="books")
 
-    __table__args=(
-        UniqueConstraint('title','authors')
+
+    users_books = relationship("UserBook",back_populates="book")
+
+    __table_args__=(
+        UniqueConstraint('title','authors'),
     )
 
 
@@ -78,12 +81,23 @@ class BookChunk(Base):
         ),
 
     )
-    
+
+class User(Base):
+    __tablename__="users"
+    id = Column(Integer,primary_key=True)
+    username = Column(String,index=True)
+    email = Column(String,index=True)
+
+    users_books = relationship("UserBook",back_populates="user")
 
 
 class UserBook(Base):
-    __tablename__="userBooks"
-    id = Column(Integer,primary_key=True)
-    title = Column(String,)
-    cleaned_file = Column(Text)
+    __tablename__="users_books"
+    book_id = Column(Integer,ForeignKey("books.id"),primary_key=True)
+    user_id = Column(Integer,ForeignKey("users.id"),primary_key=True)
+    
+    progress = Column(Integer,index=True)
+
+    user = relationship("User",back_populates="users_books")
+    book = relationship("Book",back_populates="users_books")
 

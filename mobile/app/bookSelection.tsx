@@ -1,6 +1,6 @@
 import {useState,useEffect} from "react"
 import {ScrollView,View,Button,Text,StyleSheet,Pressable,Modal,ActivityIndicator} from "react-native"
-import {useBookStore,BookFull} from "../store"
+import {useBookStore,BookFull,BookFullText} from "../store"
 import Book from "../components/book"
 import api from "../api"
 import { useRouter } from "expo-router";
@@ -15,15 +15,18 @@ export default function bookSelection(){
     const expandedBook = books.find((b)=>b.gutenberg_id==expandedBookID)
     const [loading,setLoading] = useState(false)
 
-    const setSelectedBook = useBookStore((state) => state.setSelectedBook);
+    const setSelectedBook = useBookStore((state) => state.setSelectedBook)
+    const setBookPosition = useBookStore((state)=>state.setBookPosition)
+    const setBookText = useBookStore((state)=>state.setBookText)
 
 
-    const processBook = async (book:BookFull) => {
+    const processBook = async (book:BookFullText) => {
         const response = await api.post("/book/process",book)
         setSelectedBook(response.data)
+
     }
 
-    const handleProcess = async (book:BookFull) => {
+    const handleProcess = async (book:BookFullText) => {
         try{
             setLoading(true)
             expandedBook && await processBook(expandedBook)
@@ -35,6 +38,7 @@ export default function bookSelection(){
         finally{
             setLoading(false)
             setExpandedBookID(null)
+            setBookPosition(null)
         }
 
 

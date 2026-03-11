@@ -49,3 +49,13 @@ async def upload_audio(audio:UploadFile,book_id:int):
 
 
     return audioReturn(text=answer)
+
+
+
+def stream_book(book:bookFull,start_position:int,db:Session):
+    try:
+        chunks = db.query(BookChunk).filter(BookChunk.book_id == book.id,BookChunk.chunk_index >= start_position).order_by(BookChunk.chunk_index).limit(10).all()
+        return chunks
+    except Exception as e:
+        raise e
+    
