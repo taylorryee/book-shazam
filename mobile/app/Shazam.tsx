@@ -28,6 +28,7 @@ export default function Shazam(){
             <ScrollView>
             <View>
                 <Text>
+
                     {SelectedBook.text}
                 </Text>
 

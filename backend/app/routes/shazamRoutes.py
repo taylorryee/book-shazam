@@ -18,8 +18,8 @@ def start_reading_text(book:bookFull,text:str,db:Session=Depends(get_db)):
 
 
 @router.post("/upload",response_model = audioReturn)
-async def upload_audio(book_id:int,audio:UploadFile=File(...)):
-    audio = await service.upload_audio(audio,book_id)
+async def upload_audio(book:bookFull,audio:UploadFile=File(...)):
+    audio = await service.upload_audio(audio,book)
 
     return audio
 

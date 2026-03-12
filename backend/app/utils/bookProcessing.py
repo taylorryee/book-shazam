@@ -8,12 +8,55 @@ from datetime import datetime,timedelta
 import tiktoken
 from app.config import openai
 from nltk.tokenize import sent_tokenize
-
+from app.schemas.bookSchemas import bookFull
 
 
 LEASE_TIMEOUT = timedelta(minutes=10)
 
-@celery.task
+async def clean_text(book:bookFull):
+        try:
+            text = unicodedata.normalize("NFKC", book.text)
+
+            # Normalize line endings
+            text = text.replace("\r\n", "\n")
+
+            # Remove Gutenberg header
+            start_pattern = r"\*\*\*\s*START OF.*?\*\*\*"
+            start_match = re.search(start_pattern, text, re.IGNORECASE)
+            if start_match:
+                text = text[start_match.end():]
+
+            # Remove Gutenberg footer
+            end_pattern = r"\*\*\*\s*END OF.*?\*\*\*"
+            end_match = re.search(end_pattern, text, re.IGNORECASE)
+            if end_match:
+                text = text[:end_match.start()]
+
+            # Normalize smart punctuation
+            replacements = {
+                "“": '"',
+                "”": '"',
+                "‘": "'",
+                "’": "'",
+                "—": "-",
+                "–": "-",
+            }
+            for k, v in replacements.items():
+                text = text.replace(k, v)
+
+            # Remove bracket-only lines
+            text = re.sub(r"^\[.*?\]$", "", text, flags=re.MULTILINE)
+
+            # Remove excessive blank lines and strip trailing whitespace
+            cleaned = "\n".join(line.rstrip() for line in re.sub(r"\n{3,}", "\n\n", text).split("\n")).strip()
+
+            book.text = cleaned 
+        except Exception as e:
+            raise e
+        
+
+
+""" @celery.task
 def clean_text(): #Pull based - checks db for process_level = "uploaded"
     db = SessionLocal()
     set_cleaning = False
@@ -85,7 +128,7 @@ def clean_text(): #Pull based - checks db for process_level = "uploaded"
         
             raise e
     finally:
-        db.close()
+        db.close() """
 
 
 

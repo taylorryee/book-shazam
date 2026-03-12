@@ -38,14 +38,14 @@ def start_reading_text(book:bookFull,text:str,db:Session):
     
     
 
-async def upload_audio(audio:UploadFile,book_id:int):
+async def upload_audio(audio:UploadFile,book:bookFull):
     file_extension = os.path.splitext(audio.filename)[1] #gets audio type, mp3, wav etc
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=file_extension) as tmp: #creates a temporary file on disk that you can write too.
         tmp.write(await audio.read())#read from the audio file which is of type UploadFile, we await because UploadFile is an async type
         tmp_path = tmp.name
     
-    answer = await process_audio(tmp_path,book_id)
+    answer = await process_audio(tmp_path,book)
 
 
     return audioReturn(text=answer)

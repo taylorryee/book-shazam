@@ -29,14 +29,14 @@ type BookStore = {
   books: BookFullText[];
   selectedBook:BookFullText | null;
   bookPosition:number | null;
-  bookText:string | null;
+
   
   setBooks: (books: BookFullText[]) => void;
   addBook: (book: BookFullText) => void;
   clearBooks: () => void;
   setSelectedBook:(book:BookFullText | null)=>void
   setBookPosition:(position:number | null)=>void
-  setBookText:(text:string | null)=>void
+
 };
 // Create your Zustand store here
 
@@ -57,7 +57,7 @@ export const useBookStore = create<BookStore>((set) => ({
 
   setSelectedBook:(book)=>set({selectedBook:book}),
   setBookPosition:(position)=>set({bookPosition:position}),
-  setBookText:(text=>set({bookText:text})),
+
 
 
 }));

@@ -17,7 +17,7 @@ export default function bookSelection(){
 
     const setSelectedBook = useBookStore((state) => state.setSelectedBook)
     const setBookPosition = useBookStore((state)=>state.setBookPosition)
-    const setBookText = useBookStore((state)=>state.setBookText)
+
 
 
     const processBook = async (book:BookFullText) => {

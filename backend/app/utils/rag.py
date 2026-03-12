@@ -8,23 +8,23 @@ from app.schemas.bookSchemas import bookFull
 import asyncio
 
 
-def relevant_chunks(embedding: list[float],book_id:int, db: Session):
-    relevant = db.query(BookChunk).order_by(BookChunk.embedding.cosine_distance(embedding)).filter(BookChunk.book_id==book_id).limit(5).all()
+def relevant_chunks(embedding: list[float],book:bookFull, db: Session):
+    relevant = db.query(BookChunk).order_by(BookChunk.embedding.cosine_distance(embedding)).filter(BookChunk.book_id==book.id).limit(5).all()
     return [chunk.text for chunk in relevant]
 
 
-def db_work(book_id:int,embedding:list[float]):
+def db_work(book:bookFull,embedding:list[float]):
     db=SessionLocal()
     try:
-        book = db.get(Book,book_id)
+        book = db.get(Book,book.id)
         if not book:
             return None
-        context = relevant_chunks(embedding,book_id,db)
+        context = relevant_chunks(embedding,book,db)
         return context,book
     finally:
         db.close()
 
-async def process_audio(file_path:str,book_id:int):
+async def process_audio(file_path:str,book:bookFull):
     try:
         with open(file_path,"rb") as f:
             transcript = await openai.audio.transcriptions.create( 
@@ -39,7 +39,7 @@ async def process_audio(file_path:str,book_id:int):
 
         embedding = embedding_response.data[0].embedding
 
-        context,book = await asyncio.to_thread(db_work,book_id,embedding)
+        context,book = await asyncio.to_thread(db_work,book,embedding)
        
         formatted_context = "\n\n".join(f"Passage {i+1}:\n{chunk}" for i, chunk in enumerate(context))
         
@@ -52,7 +52,7 @@ async def process_audio(file_path:str,book_id:int):
 
                 You will be given:
                 1) A user question
-                2) Exceprts from {book.title} that may or may not be relevant
+                2) Excerpts from {book.title} that may or may not be relevant
 
                 Your job:
 
