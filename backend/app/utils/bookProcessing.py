@@ -13,47 +13,55 @@ from app.schemas.bookSchemas import bookFull
 
 LEASE_TIMEOUT = timedelta(minutes=10)
 
-async def clean_text(book:bookFull):
-        try:
-            text = unicodedata.normalize("NFKC", book.text)
 
-            # Normalize line endings
-            text = text.replace("\r\n", "\n")
 
-            # Remove Gutenberg header
-            start_pattern = r"\*\*\*\s*START OF.*?\*\*\*"
-            start_match = re.search(start_pattern, text, re.IGNORECASE)
-            if start_match:
-                text = text[start_match.end():]
+async def clean_text(book: bookFull):
+    try:
+        text = unicodedata.normalize("NFKC", book.text)
 
-            # Remove Gutenberg footer
-            end_pattern = r"\*\*\*\s*END OF.*?\*\*\*"
-            end_match = re.search(end_pattern, text, re.IGNORECASE)
-            if end_match:
-                text = text[:end_match.start()]
+        # Normalize line endings
+        text = text.replace("\r\n", "\n")
 
-            # Normalize smart punctuation
-            replacements = {
-                "“": '"',
-                "”": '"',
-                "‘": "'",
-                "’": "'",
-                "—": "-",
-                "–": "-",
-            }
-            for k, v in replacements.items():
-                text = text.replace(k, v)
+        # Remove Gutenberg header
+        start_pattern = r"\*\*\*\s*START OF.*?\*\*\*"
+        start_match = re.search(start_pattern, text, re.IGNORECASE)
+        if start_match:
+            text = text[start_match.end():]
 
-            # Remove bracket-only lines
-            text = re.sub(r"^\[.*?\]$", "", text, flags=re.MULTILINE)
+        # Remove Gutenberg footer
+        end_pattern = r"\*\*\*\s*END OF.*?\*\*\*"
+        end_match = re.search(end_pattern, text, re.IGNORECASE)
+        if end_match:
+            text = text[:end_match.start()]
 
-            # Remove excessive blank lines and strip trailing whitespace
-            cleaned = "\n".join(line.rstrip() for line in re.sub(r"\n{3,}", "\n\n", text).split("\n")).strip()
+        # Normalize smart punctuation
+        replacements = {
+            "“": '"',
+            "”": '"',
+            "‘": "'",
+            "’": "'",
+            "—": "-",
+            "–": "-",
+        }
+        for k, v in replacements.items():
+            text = text.replace(k, v)
 
-            book.text = cleaned 
-        except Exception as e:
-            raise e
-        
+        # Remove bracket-only lines
+        text = re.sub(r"^\[.*?\]$", "", text, flags=re.MULTILINE)
+
+        # FIX: unwrap hard line breaks
+        text = re.sub(r'(?<!\n)\n(?!\n)', ' ', text)
+
+        # Normalize whitespace
+        text = re.sub(r"[ \t]+", " ", text)
+
+        # Normalize paragraph spacing
+        text = re.sub(r"\n{3,}", "\n\n", text)
+
+        book.text = text.strip()
+
+    except Exception as e:
+        raise e
 
 
 """ @celery.task
@@ -200,7 +208,16 @@ def chunk_paragraphs(paragraphs: list[str], max_tokens: int):
 
     return chunks
 
-@celery.task
+async def chunk_text(book:bookFull):
+    try:
+        paragraphs = [p.strip() for p in book.text.split("\n\n") if p.strip()]
+        chunks = chunk_paragraphs(paragraphs,500)
+        book.chunks = chunks
+
+    except Exception as e:
+        raise e
+
+""" @celery.task
 def chunk_text():
     db = SessionLocal()
     set_chunking = False
@@ -237,7 +254,7 @@ def chunk_text():
         raise e
     
     finally:
-        db.close()
+        db.close() """
 
 
 

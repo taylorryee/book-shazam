@@ -10,38 +10,34 @@ export default function Shazam(){
     const setBookPosition = useBookStore((state)=>state.setBookPosition)
     const BookPosition = useBookStore((state)=>state.bookPosition)
     
-    if (!SelectedBook || !SelectedBook.id){
+    if (!SelectedBook || !SelectedBook.id || !SelectedBook.text || !SelectedBook.chunks){
         return null
     }
     const bookID = SelectedBook.id
-    
-    const upload_text = async () =>{
+
+    const to_page = async () =>{
         const response = await api.post("/shazam/start_text", SelectedBook, {params: { text: startText },});
         setBookPosition(response.data)
 
     }
-
-    useEffect(()=>console.log(BookPosition),[BookPosition])
-
-    if(BookPosition){
-        return(
-            <ScrollView>
-            <View>
-                <Text>
-
-                    {SelectedBook.text}
-                </Text>
-
-            </View>
-            </ScrollView>
-        );
-    }
+    
     return(
-        <View>
-            <TextInput placeholder="Input sentence that you are on" value = {startText} onChangeText = {setStartText} style={styles.textInput}/>
-            <Button title = "start reading" onPress = {upload_text}/> 
-        </View>
+        <ScrollView>
+            {SelectedBook.chunks.map(chunk => 
+                <Text key = {chunk.chunk_index}>
+                    {chunk.text}
+                    {"\n\n"}
+                </Text>
+            )}
+        </ScrollView>
     );
+    // return(
+    //     <ScrollView>
+    //         <Text>
+    //             {SelectedBook.text}
+    //         </Text>
+    //     </ScrollView>
+    // );
 }
 
 

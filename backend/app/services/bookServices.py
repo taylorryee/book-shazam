@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 import httpx,json,requests,os,uuid,tempfile
 from fastapi import HTTPException
-from app.utils.bookProcessing import clean_text
+from app.utils.bookProcessing import clean_text,chunk_text
 
 
 
@@ -58,13 +58,11 @@ async def process_book(book:bookFull,db:Session):
         response = await client.get(text_url)
         response.raise_for_status()
 
-    #print("About to enqueue celery task...",flush=True)
-    #process_task = clean_text.delay(response.text,book.gutenberg_id) 
-    #print("enqued celery task..",process_task.id,flush=True)
     book.text = response.text
     await clean_text(book)
+    await chunk_text(book)
 
-    processing_book = Book(gutenberg_id=book.gutenberg_id, title=book.title, authors=book.authors, formats=book.formats, text_url=text_url, cover_image_url=cover_image_url,process_level="cleaned",text = book.text)
+    processing_book = Book(gutenberg_id=book.gutenberg_id, title=book.title, authors=book.authors, formats=book.formats, text_url=text_url, cover_image_url=cover_image_url,process_level="chunked",text = book.text,chunks=book.chunks)
     
     db.add(processing_book)
     

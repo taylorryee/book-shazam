@@ -18,11 +18,17 @@ export default function bookSelection(){
     const setSelectedBook = useBookStore((state) => state.setSelectedBook)
     const setBookPosition = useBookStore((state)=>state.setBookPosition)
 
+    const selectedBook = useBookStore((state)=>state.selectedBook)
+
 
 
     const processBook = async (book:BookFullText) => {
         const response = await api.post("/book/process",book)
         setSelectedBook(response.data)
+        if(selectedBook){
+                console.log(selectedBook.text_url)
+        }
+
 
     }
 
@@ -30,6 +36,7 @@ export default function bookSelection(){
         try{
             setLoading(true)
             expandedBook && await processBook(expandedBook)
+
             router.push("/Shazam")
         }
         catch(e){
@@ -43,7 +50,7 @@ export default function bookSelection(){
 
 
     }
-    useEffect(()=>console.log(expandedBook),[expandedBook])
+
 
     if (loading && expandedBook) {
         return (

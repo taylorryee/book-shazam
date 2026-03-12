@@ -1,5 +1,9 @@
 import {create} from 'zustand'
 
+type BookChunk = {
+  chunk_index:number,
+  text:string,
+}
 
 export type BookFull = {
   id: number | null;
@@ -23,6 +27,7 @@ export type BookFullText = {
   cover_image_url: string | null;
   process_level: string | null;
   text:string | null;
+  chunks:null | BookChunk[]
 }
 
 type BookStore = {
