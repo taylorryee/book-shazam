@@ -21,22 +21,28 @@ export default function bookSelection(){
     const selectedBook = useBookStore((state)=>state.selectedBook)
 
 
-
-    const processBook = async (book:BookFullText) => {
+    const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms)) //Promise syntax is Promise(resolve,reject => {code to run ... then either resolve() for success or reject() for failure}) In our case we simply run setTimeout which will not fail
+    //so we can just do setTimeout then have it run resolve when it finishes to return the promise. We can now await this sleep function in processBook because it is a Promise that runs setTimeout.
+    // Now we can use sleep in processBook using await sleep(1000) to actually pause the async function as it will await as long as the Promise is not resolved - which will happen when setTimeout finishes. 
+    // If we just did await setTimeout(...) it would not wait, because setTimeout is non-blocking
+    
+    const processBook = async (book:BookFullText):Promise<BookFullText> => {
         const response = await api.post("/book/process",book)
-        setSelectedBook(response.data)
-        if(selectedBook){
-                console.log(selectedBook.text_url)
+        if (response.data.process_level == "processing"){
+            await sleep(1000)
+            const processed = await processBook(book) //Recursivly call processBook untill the book is processed. 
+            return processed 
         }
-
-
+        else{
+            return response.data
+        }
     }
 
     const handleProcess = async (book:BookFullText) => {
         try{
             setLoading(true)
-            expandedBook && await processBook(expandedBook)
-
+            const processed_book = await processBook(book)
+            setSelectedBook(processed_book)
             router.push("/Shazam")
         }
         catch(e){
@@ -47,7 +53,6 @@ export default function bookSelection(){
             setExpandedBookID(null)
             setBookPosition(null)
         }
-
 
     }
 

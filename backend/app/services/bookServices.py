@@ -46,7 +46,7 @@ async def process_book(book:bookFull,db:Session):
         if db_book:
             return db_book
         try:
-            processing_book = Book(title = book.title,authors = book.authors, gutenberg_id = book.gutenberg_id, process_level = "uploading")
+            processing_book = Book(title = book.title,authors = book.authors,formats = book.formats, gutenberg_id = book.gutenberg_id, process_level = "processing")
             db.add(processing_book)
             db.commit()
         except IntegrityError:

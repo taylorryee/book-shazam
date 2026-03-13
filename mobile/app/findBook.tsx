@@ -2,26 +2,7 @@ import { View, Text, Button, TextInput, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { useState,useEffect } from "react";
 import api from "../api"
-import {useBookStore} from "../store"
-
-type BookChunk = {
-  chunk_index: number;
-  text: string;
-  token_count: number;
-  embedding: number[] | null;
-};
-
-type BookFull = {
-  id: number | null;
-  gutenberg_id: number | null;
-  title: string;
-  authors: string[];
-  formats: Record<string, string>;
-  text_url: string | null;
-  cover_image_url: string | null;
-  process_level: string | null;
-  chunks: BookChunk[] | null;
-};
+import {useBookStore,BookFullText} from "../store"
 
 
 export default function findBook() {
@@ -34,8 +15,8 @@ export default function findBook() {
   const books =useBookStore((state)=>state.books)
   const setBooks = useBookStore((state)=>state.setBooks)
 
-  const getBooks = async (title:string | null,author:string|null): Promise<BookFull[]> => {
-    const response = await api.post<BookFull[]>("/book",{title,author})
+  const getBooks = async (title:string | null,author:string|null): Promise<BookFullText[]> => {
+    const response = await api.post<BookFullText[]>("/book",{title,author})
     setBooks(response.data)
     
     return response.data

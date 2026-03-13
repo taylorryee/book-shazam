@@ -10,7 +10,7 @@ from sqlalchemy.dialects.postgresql import TSVECTOR
 class BookState(enum.Enum):
     noContext = "noContext" #no book context
     context = "context" #has book context
-    
+    processing = "processing"
     processed = "processed" #currently processing book
     
     uploaded = "uploaded"
