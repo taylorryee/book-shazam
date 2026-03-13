@@ -2,7 +2,7 @@ from app.schemas.bookSchemas import bookCreate,bookFull
 from app.models.bookModels import Book,BookChunk
 from app.utils.bookProcessing import clean_text
 
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 import httpx,json,requests,os,uuid,tempfile
@@ -41,39 +41,45 @@ async def get_book(book:bookCreate,db:Session):
 
 
 async def process_book(book:bookFull,db:Session):
-    db_book = db.query(Book).filter(Book.gutenberg_id==book.gutenberg_id).first()
-    
-    if db_book:
-        
-        return db_book
+    try:
+        db_book = db.query(Book).filter(Book.gutenberg_id==book.gutenberg_id).first()
+        if db_book:
+            return db_book
+        try:
+            processing_book = Book(title = book.title,authors = book.authors, gutenberg_id = book.gutenberg_id, process_level = "uploading")
+            db.add(processing_book)
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            return db.query(Book).filter(Book.gutenberg_id == book.gutenberg_id).first()
 
-    
-    text_url = (book.formats.get("text/plain; charset=utf-8") or 
+        text_url = (book.formats.get("text/plain; charset=utf-8") or 
                 book.formats.get("text/plain") or 
                 book.formats.get("text/plain; charset=us-ascii"))
     
-    cover_image_url = book.formats.get("image/jpeg")
+        cover_image_url = book.formats.get("image/jpeg")
+        processing_book.text_url = text_url
+        processing_book.cover_image_url = cover_image_url
+        db.commit()
     
-    async with httpx.AsyncClient(follow_redirects=True) as client:
-        response = await client.get(text_url)
-        response.raise_for_status()
+        async with httpx.AsyncClient(follow_redirects=True) as client:
+            response = await client.get(text_url)
+            response.raise_for_status()
 
-    book.text = response.text
-    await clean_text(book)
-    await chunk_text(book)
+        cleaned_text = await clean_text(response.text)
+        chunks = await chunk_text(cleaned_text)
+        processing_book.text = cleaned_text
+        processing_book.chunks = chunks
+        processing_book.process_level = "chunked"
 
-    processing_book = Book(gutenberg_id=book.gutenberg_id, title=book.title, authors=book.authors, formats=book.formats, text_url=text_url, cover_image_url=cover_image_url,process_level="chunked",text = book.text,chunks=book.chunks)
-    
-    db.add(processing_book)
-    
-    try:
+
         db.commit()
         db.refresh(processing_book)
-        #process_task = clean_text.delay(processing_book.id)
         return processing_book
-    except IntegrityError:
+    except Exception as e:
         db.rollback()
-        raise HTTPException(400,"error adding to db")
+        raise e
+
     
 
 async def start_reading(book,audio,db):

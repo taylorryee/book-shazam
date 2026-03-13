@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
     
 
-def start_reading_text(book:bookFull,text:str,db:Session):
+def start_text(book:bookFull,text:str,db:Session):
     try:
         rank = func.ts_rank(
             BookChunk.text_search,

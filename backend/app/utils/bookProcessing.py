@@ -15,9 +15,9 @@ LEASE_TIMEOUT = timedelta(minutes=10)
 
 
 
-async def clean_text(book: bookFull):
+async def clean_text(book_text:str):
     try:
-        text = unicodedata.normalize("NFKC", book.text)
+        text = unicodedata.normalize("NFKC", book_text)
 
         # Normalize line endings
         text = text.replace("\r\n", "\n")
@@ -58,7 +58,7 @@ async def clean_text(book: bookFull):
         # Normalize paragraph spacing
         text = re.sub(r"\n{3,}", "\n\n", text)
 
-        book.text = text.strip()
+        return text.strip()
 
     except Exception as e:
         raise e
@@ -208,11 +208,11 @@ def chunk_paragraphs(paragraphs: list[str], max_tokens: int):
 
     return chunks
 
-async def chunk_text(book:bookFull):
+async def chunk_text(text:str):
     try:
-        paragraphs = [p.strip() for p in book.text.split("\n\n") if p.strip()]
+        paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
         chunks = chunk_paragraphs(paragraphs,500)
-        book.chunks = chunks
+        return chunks
 
     except Exception as e:
         raise e

@@ -10,8 +10,8 @@ from app.schemas.bookSchemas import bookFull
 router = APIRouter(prefix = "/shazam", tags=["Shazam routes"])
 
 @router.post("/start_text")
-def start_reading_text(book:bookFull,text:str,db:Session=Depends(get_db)):
-    start = service.start_reading_text(book,text,db)
+def start_text(book:bookFull,text:str,db:Session=Depends(get_db)):
+    start = service.start_text(book,text,db)
     if not start:
          return None
     return start
