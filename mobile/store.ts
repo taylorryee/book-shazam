@@ -30,10 +30,19 @@ export type BookFullText = {
   chunks:null | BookChunk[]
 }
 
+
+
+export type Page = {
+  lines:string[]
+  index:number
+}
+
+
 type BookStore = {
   books: BookFullText[];
   selectedBook:BookFullText | null;
   bookPosition:number | null;
+  pages:Page[];
 
   
   setBooks: (books: BookFullText[]) => void;
@@ -41,15 +50,16 @@ type BookStore = {
   clearBooks: () => void;
   setSelectedBook:(book:BookFullText | null)=>void
   setBookPosition:(position:number | null)=>void
+  setPages:(pages:Page[])=>void
 
 };
-// Create your Zustand store here
 
 export const useBookStore = create<BookStore>((set) => ({
   books: [],
   selectedBook:null,
   bookPosition:null,
   bookText:null,
+  pages:[],
 
   setBooks: (books) => set({ books }),
 
@@ -62,6 +72,7 @@ export const useBookStore = create<BookStore>((set) => ({
 
   setSelectedBook:(book)=>set({selectedBook:book}),
   setBookPosition:(position)=>set({bookPosition:position}),
+  setPages:(pages)=>set({pages:pages})
 
 
 
