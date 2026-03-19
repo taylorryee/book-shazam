@@ -26,8 +26,8 @@ export type BookFullText = {
   text_url: string | null;
   cover_image_url: string | null;
   process_level: string | null;
-  text:string | null;
-  chunks:null | BookChunk[]
+  text:string;
+  chunks:BookChunk[]
 }
 
 

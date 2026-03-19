@@ -16,7 +16,7 @@ export default function findBook() {
   const setBooks = useBookStore((state)=>state.setBooks)
 
   const getBooks = async (title:string | null,author:string|null): Promise<BookFullText[]> => {
-    const response = await api.post<BookFullText[]>("/book",{title,author})
+    const response = await api.post<BookFullText[]>("/book/",{title,author})
     setBooks(response.data)
     
     return response.data
