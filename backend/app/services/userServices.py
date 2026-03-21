@@ -9,9 +9,10 @@ from celery.result import AsyncResult
 from app.models.bookModels import Book,BookChunk,User,UserBook
 from app.utils.bookProcessing import max_token_batch,embed_batch
 from app.auth import create_access_token
+from app.schemas.userSchemas import LoginRequest
 
-def login(username: str, db: Session):
-    username = username.strip().lower()
+def login(login:LoginRequest, db: Session):
+    username = login.username.strip().lower()
 
     user = db.query(User).filter(User.username == username).first()
 

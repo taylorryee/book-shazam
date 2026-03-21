@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends
 from app.routes.shazamRoutes import router as shazamRouter
 from app.routes.bookRoutes import router as bookRouter
+from app.routes.userRoutes import router as userRouter
 from app.db import Base,engine
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -27,6 +28,7 @@ def on_startup():
 
 app.include_router(shazamRouter)
 app.include_router(bookRouter)
+app.include_router(userRouter)
 
 
 
