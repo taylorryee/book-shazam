@@ -7,7 +7,7 @@ type BookChunk = {
 
 export type BookFull = {
   id: number | null;
-  gutenberg_id: number | null;
+  gutenberg_id: number;
   title: string;
   authors: string[];
   formats: Record<string, string>;
@@ -19,7 +19,7 @@ export type BookFull = {
 
 export type BookFullText = {
   id: number | null;
-  gutenberg_id: number | null;
+  gutenberg_id: number;
   title: string;
   authors: string[];
   formats: Record<string, string>;
@@ -43,6 +43,7 @@ type BookStore = {
   selectedBook:BookFullText | null;
   bookPosition:number | null;
   pages:Page[];
+  currentPage:number
 
   
   setBooks: (books: BookFullText[]) => void;
@@ -51,6 +52,7 @@ type BookStore = {
   setSelectedBook:(book:BookFullText | null)=>void
   setBookPosition:(position:number | null)=>void
   setPages:(pages:Page[])=>void
+  setCurrentPage:(pageNum:number)=>void
 
 };
 
@@ -60,6 +62,7 @@ export const useBookStore = create<BookStore>((set) => ({
   bookPosition:null,
   bookText:null,
   pages:[],
+  currentPage:0,
 
   setBooks: (books) => set({ books }),
 
@@ -72,7 +75,8 @@ export const useBookStore = create<BookStore>((set) => ({
 
   setSelectedBook:(book)=>set({selectedBook:book}),
   setBookPosition:(position)=>set({bookPosition:position}),
-  setPages:(pages)=>set({pages:pages})
+  setPages:(pages)=>set({pages:pages}),
+  setCurrentPage:(pageNum)=>set({currentPage:pageNum})
 
 
 

@@ -12,18 +12,21 @@ from app.utils.bookProcessing import clean_text,chunk_text
 
 
 async def get_book(book:bookCreate,db:Session):
+
     if not book.title and not book.author:
         raise HTTPException(400,"Needs a title or an author")
     
     if book.title:
-        already_processed_title = db.query(Book).filter(func.lower(Book.title)==book.title.lower()).all()
-        if already_processed_title:
-            return already_processed_title
+        already_processed_titles = db.query(Book).filter(func.lower(Book.title)==book.title.lower()).all()
+        if already_processed_titles:
+            return already_processed_titles
 
     query = " ".join(filter(None, [book.title, book.author]))
 
-    async with httpx.AsyncClient(timeout=30.0) as client:
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        print("Calling Gutendex...", flush=True)
         resp = await client.get("https://gutendex.com/books/", params={"search":query})
+        print("Got response", flush=True)
         resp.raise_for_status() #raises exception if there is an error
         data = resp.json()
         #print(data,flush=True)
@@ -62,7 +65,7 @@ async def process_book(book:bookFull,db:Session):
         processing_book.cover_image_url = cover_image_url
         db.commit()
     
-        async with httpx.AsyncClient(follow_redirects=True) as client:
+        async with httpx.AsyncClient(timeout=60.0,follow_redirects=True) as client:
             response = await client.get(text_url)
             response.raise_for_status()
 

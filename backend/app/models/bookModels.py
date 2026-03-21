@@ -85,8 +85,8 @@ class BookChunk(Base):
 class User(Base):
     __tablename__="users"
     id = Column(Integer,primary_key=True)
-    username = Column(String,index=True)
-    email = Column(String,index=True)
+    username = Column(String,index=True,nullable=True)
+    email = Column(String,index=True,nullable=True)
 
     users_books = relationship("UserBook",back_populates="user")
 
