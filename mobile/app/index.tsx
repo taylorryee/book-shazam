@@ -16,6 +16,7 @@ export default function Index() {
 
     // store token
      await AsyncStorage.setItem("token", response.data.access_token);
+     console.log(token)
 
     // go to main app
       router.push("/findBook"); // or whatever route you have
@@ -34,7 +35,16 @@ export default function Index() {
         alignItems: "center",
       }}
     >
-      <TextInput placeholder = "username" onChangeText = {setUserName}/>
+      <TextInput placeholder = "username" onChangeText = {setUserName}  style={{
+          width: "100%",
+          borderWidth: 1,
+          borderColor: "#ccc",
+          borderRadius: 8,
+          paddingHorizontal: 12,
+          paddingVertical: 10,
+          marginBottom: 12,
+          backgroundColor: "#fff",
+        }}/>
       <Button title = "login" onPress = {()=>login(userName)}/>
     </View>
   );

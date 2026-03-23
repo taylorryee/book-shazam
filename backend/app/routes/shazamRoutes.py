@@ -7,10 +7,12 @@ from app.config import openai
 from app.utils.rag import relevant_chunks
 from app.models.bookModels import Book,BookChunk
 from app.schemas.bookSchemas import bookFull
+from app.auth import get_current_user
+from app.models.bookModels import User
 router = APIRouter(prefix = "/shazam", tags=["Shazam routes"])
 
 @router.post("/start_text")
-def start_text(book:bookFull,text:str,db:Session=Depends(get_db)):
+def start_text(book:bookFull,text:str,db:Session=Depends(get_db), current_user: User = Depends(get_current_user)):
     start = service.start_text(book,text,db)
     if not start:
          return None
@@ -18,13 +20,13 @@ def start_text(book:bookFull,text:str,db:Session=Depends(get_db)):
 
 
 @router.post("/upload",response_model = audioReturn)
-async def upload_audio(book:bookFull,audio:UploadFile=File(...)):
+async def upload_audio(book:bookFull,audio:UploadFile=File(...), current_user: User = Depends(get_current_user)):
     audio = await service.upload_audio(audio,book)
 
     return audio
 
 @router.post("/upload_text")
-def upload_text(text:str,book_id:int,db:Session=Depends(get_db)):
+def upload_text(text:str,book_id:int,db:Session=Depends(get_db), current_user: User = Depends(get_current_user)):
 
         embedding_response = openai.embeddings.create(
             model="text-embedding-3-small",
@@ -73,5 +75,5 @@ def upload_text(text:str,book_id:int,db:Session=Depends(get_db)):
 
 
 @router.get("/stream_book")
-def stream_book(book:bookFull,start_position:int,db:Session=Depends(get_db)):
+def stream_book(book:bookFull,start_position:int,db:Session=Depends(get_db), current_user: User = Depends(get_current_user)):
      return service.stream_book(book,start_position,db)

@@ -3,6 +3,7 @@ import {View,Button,TextInput,StyleSheet,Text,ScrollView,TextLayoutLine, Activit
 import api from "../api"
 import {useBookStore,Page} from "../store"
 import PagerView from "react-native-pager-view";
+import SelectableText from "../components/SelectableText"
 
 
 export default function Shazam() {
@@ -87,7 +88,7 @@ useEffect(() => {
       >
         {pages.map((pageText, i) => (
           <View key={i} style={{ flex: 1, padding: 20 }}>
-            <Text style={{ lineHeight: LINE_HEIGHT }}>{pageText}</Text>
+            <Text selectable style={{ lineHeight: LINE_HEIGHT }}>{pageText}</Text>
           </View>
         ))}
       </PagerView>

@@ -9,7 +9,7 @@ from celery.result import AsyncResult
 from app.models.bookModels import Book,BookChunk,User,UserBook
 from app.utils.bookProcessing import max_token_batch,embed_batch
 from app.auth import create_access_token
-from app.schemas.userSchemas import LoginRequest
+from app.schemas.userSchemas import LoginRequest, UserFullRequest
 
 def login(login:LoginRequest, db: Session):
     username = login.username.strip().lower()
@@ -26,3 +26,10 @@ def login(login:LoginRequest, db: Session):
     token = create_access_token(token_data)
 
     return {"access_token": token}
+
+
+def get_user_books(user,db:Session):
+    user_books = db.query(UserBook).filter(UserBook.user_id==user.id).all()
+    return user_books
+
+
