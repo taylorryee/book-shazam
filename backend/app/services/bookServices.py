@@ -1,5 +1,5 @@
 from app.schemas.bookSchemas import bookCreate,bookFull
-from app.models.bookModels import Book,BookChunk
+from app.models.bookModels import Book,BookChunk,UserBook
 from app.utils.bookProcessing import clean_text
 
 from sqlalchemy import func, or_
@@ -43,14 +43,23 @@ async def get_book(book:bookCreate,db:Session):
     return ans
 
 
-async def process_book(book:bookFull,db:Session):
+async def process_book(book:bookFull,db:Session,user):
     try:
-        db_book = db.query(Book).filter(Book.gutenberg_id==book.gutenberg_id).first()
+        db_book = db.query(Book).filter(Book.gutenberg_id==book.gutenberg_id,Book.process_level=="embedded").first()
         if db_book:
+            user_book = db.query(UserBook).filter(UserBook.user_id==user.id,UserBook.book_id==book.id).first()
+            if not user_book:
+                user_book = UserBook(book_id = db_book.id,user_id=user.id,progress=0,lines=None)
+                db.add(user_book)
+                db.commit()
             return db_book
         try:
             processing_book = Book(title = book.title,authors = book.authors,formats = book.formats, gutenberg_id = book.gutenberg_id, process_level = "processing")
             db.add(processing_book)
+            db.commit()
+            db.refresh(processing_book)
+            user_book = UserBook(book_id = processing_book.id,user_id=user.id,progress=0,lines=None)
+            db.add(user_book)
             db.commit()
         except IntegrityError:
             db.rollback()

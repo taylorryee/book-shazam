@@ -14,15 +14,34 @@ export default function findBook() {
   const [error, setError] = useState<string | null>(null);
   const books =useBookStore((state)=>state.books)
   const setBooks = useBookStore((state)=>state.setBooks)
+  const setUserBooks = useBookStore((state)=>state.setUserBooks)
 
-  const getBooks = async (title:string | null,author:string|null): Promise<BookFullText[]> => {
+  const getBooks = async (title:string | null,author:string|null) => {
     const response = await api.post<BookFullText[]>("/book/",{title,author})
     setBooks(response.data)
-    
+  }
+
+  const getUserBooks = async () => {
+    const response = await api.get("/user/user_books")
+    setUserBooks(response.data)
     return response.data
   }
-  
-  useEffect(()=>{console.log(books)},[books]);
+
+  const handleLibrary = async () => {
+    try{
+      setLoading(true);
+      setError(null);
+      await getUserBooks();
+      router.push("/userBooks")
+    }
+    catch(e){
+      console.error("Failed to get user books",e)
+      setError("couldnt get yo books fam")
+    }
+    finally{
+      setLoading(false)
+    }
+  }
 
   const handleFind = async () => {
     try {
@@ -63,7 +82,7 @@ export default function findBook() {
         padding: 20,
       }}
     >
-      <Text style={{ fontSize: 24, marginBottom: 20 }}>Find your book</Text>
+      <Text style={{ fontSize: 24, marginBottom: 20 }}>Find new book</Text>
       <TextInput
         placeholder="Book title"
         value={title ?? ""}
@@ -98,6 +117,7 @@ export default function findBook() {
       {/* Go back button */}
       <Button title="Find" onPress={handleFind} />
       {error ? <Text style={{ marginTop: 12, color: "red" }}>{error}</Text> : null}
+      <Button title="Library" onPress={handleLibrary}/>
     </View>
   );
 }

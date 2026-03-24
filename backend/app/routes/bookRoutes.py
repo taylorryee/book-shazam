@@ -35,9 +35,9 @@ async def get_book(book:bookCreate,db:Session=Depends(get_db), current_user: Use
 
 
 @router.post("/process",response_model = bookFull)
-async def process_book(book:bookFull,db:Session=Depends(get_db)):
+async def process_book(book:bookFull,db:Session=Depends(get_db),user=Depends(get_current_user)):
     
-    processed_book = await service.process_book(book,db)
+    processed_book = await service.process_book(book,db,user)
     if not processed_book:
         raise HTTPException(status_code = 404,detail = 'Not found')
     return processed_book

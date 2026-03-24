@@ -24,3 +24,7 @@ def login(login:LoginRequest,db:Session=Depends(get_db)):
 def get_user_books(user = Depends(get_current_user),db:Session=Depends(get_db)):
     return service.get_user_books(user,db)
 
+@router.post("/lines")
+def create_book_lines(book:bookFull,lines,user=Depends(get_current_user),db:Session=Depends(get_db)):
+    return service.create_book_lines(book,lines,user,db)
+

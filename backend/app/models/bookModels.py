@@ -85,8 +85,9 @@ class BookChunk(Base):
 class User(Base):
     __tablename__="users"
     id = Column(Integer,primary_key=True)
-    username = Column(String,index=True,nullable=True)
-    email = Column(String,index=True,nullable=True)
+    username = Column(String,index=True,unique=True,nullable=True)
+    email = Column(String,index=True,unique=True,nullable=True)
+
 
     users_books = relationship("UserBook",back_populates="user")
 
@@ -97,6 +98,7 @@ class UserBook(Base):
     user_id = Column(Integer,ForeignKey("users.id"),primary_key=True)
     
     progress = Column(Integer,index=True)
+    lines = Column(JSONB,nullable=True)
 
     user = relationship("User",back_populates="users_books")
     book = relationship("Book",back_populates="users_books")

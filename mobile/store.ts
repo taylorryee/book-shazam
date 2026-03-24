@@ -26,8 +26,8 @@ export type BookFullText = {
   text_url: string | null;
   cover_image_url: string | null;
   process_level: string | null;
-  text:string;
-  chunks:BookChunk[]
+  text:string | null;
+  chunks:BookChunk[] | null;
 }
 
 
@@ -44,6 +44,7 @@ type BookStore = {
   bookPosition:number | null;
   pages:Page[];
   currentPage:number
+  userBooks:BookFullText[];
 
   
   setBooks: (books: BookFullText[]) => void;
@@ -53,6 +54,7 @@ type BookStore = {
   setBookPosition:(position:number | null)=>void
   setPages:(pages:Page[])=>void
   setCurrentPage:(pageNum:number)=>void
+  setUserBooks:(books:BookFullText[])=>void;
 
 };
 
@@ -63,9 +65,9 @@ export const useBookStore = create<BookStore>((set) => ({
   bookText:null,
   pages:[],
   currentPage:0,
+  userBooks:[],
 
-  setBooks: (books) => set({ books }),
-
+  setBooks:(books)=>set({books:books}),
   addBook: (book) =>
     set((state) => ({
       books: [...state.books, book],
@@ -76,8 +78,8 @@ export const useBookStore = create<BookStore>((set) => ({
   setSelectedBook:(book)=>set({selectedBook:book}),
   setBookPosition:(position)=>set({bookPosition:position}),
   setPages:(pages)=>set({pages:pages}),
-  setCurrentPage:(pageNum)=>set({currentPage:pageNum})
-
+  setCurrentPage:(pageNum)=>set({currentPage:pageNum}),
+  setUserBooks:(books)=>set({userBooks:books})
 
 
 }));

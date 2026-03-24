@@ -49,13 +49,23 @@ export default function Shazam() {
     }
   }, [lines, pageHeight]);
 
-useEffect(() => {
-  const handler = setTimeout(() => {
-    savePageToDB(SelectedBook.gutenberg_id, pageIndex);
-  }, 1000); // wait 1 second after last page change
+  useEffect(()=>{
+    try{
+        api.post("/user/lines",{book:SelectedBook,lines:JSON.stringify(lines)})
+    }
+    catch(e){
+        console.error(e)
+    }
 
-  return () => clearTimeout(handler);
-}, [pageIndex]);
+  },[lines])
+
+// useEffect(() => {
+//   const handler = setTimeout(() => {
+//     savePageToDB(SelectedBook.gutenberg_id, pageIndex);
+//   }, 1000); // wait 1 second after last page change
+
+//   return () => clearTimeout(handler);
+// }, [pageIndex]);
   return (
     <View
       style={{ flex: 1 }}

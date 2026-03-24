@@ -5,16 +5,17 @@ class LoginRequest(BaseModel):
     username: str
 
 class UserBookRequest(BaseModel):
-    book_id:int
-    progess:int
+    progress:int
+    title:str
+    cover_image_url:str
 
     class Config:
         from_attributes=True
-class UserFullRequest(BaseModel):
+
+class UserFull(BaseModel):
     id:int
     username:str
     email:str | None=None
     
     class Config:
         from_attributes=True
-
