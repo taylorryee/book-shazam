@@ -38,10 +38,18 @@ export default function bookSelection(){
         }
     }
 
+    const newUserBook = async (book:BookFullText) => {
+        try{    
+            await api.post("/user/new_user_book",{book})
+        }catch(e){
+            console.error(e)
+        }
+    }
+
     const handleProcess = async (book:BookFullText) => {
         try{
             setLoading(true)
-            const processed_book = await processBook(book)
+            const processed_book = await processBook(book) //process book 
             setSelectedBook(processed_book)
             router.push("/Shazam")
         }

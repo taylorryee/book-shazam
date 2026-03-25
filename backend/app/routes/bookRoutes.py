@@ -13,19 +13,19 @@ from app.models.bookModels import User
 
 router = APIRouter(prefix = "/book",tags=["Book Routes"])
 
-@router.get("/")
-def get_book_test(id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    chunks = db.query(BookChunk).filter(BookChunk.book_id == id).all()
+# @router.get("/")
+# def get_book_test(id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+#     chunks = db.query(BookChunk).filter(BookChunk.book_id == id).all()
 
-    if not chunks:
-        raise HTTPException(400, "aw man")
+#     if not chunks:
+#         raise HTTPException(400, "aw man")
 
-    response = []
-    for chunk in chunks:
-        print("CHUNK ",chunk.embedding)
-        print("\nText",chunk.text)
+#     response = []
+#     for chunk in chunks:
+#         print("CHUNK ",chunk.embedding)
+#         print("\nText",chunk.text)
 
-    return response
+#     return response
 
 
 @router.post("/",response_model=List[bookFull])
@@ -33,6 +33,9 @@ async def get_book(book:bookCreate,db:Session=Depends(get_db), current_user: Use
     
     return await service.get_book(book,db)
 
+@router.post("/add",response_model = bookFull)
+def add_book(book:bookFull,db:Session=Depends(get_db),user=Depends(get_current_user)):
+    return service.add_book(book,db,user)
 
 @router.post("/process",response_model = bookFull)
 async def process_book(book:bookFull,db:Session=Depends(get_db),user=Depends(get_current_user)):

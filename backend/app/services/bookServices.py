@@ -16,10 +16,10 @@ async def get_book(book:bookCreate,db:Session):
     if not book.title and not book.author:
         raise HTTPException(400,"Needs a title or an author")
     
-    if book.title:
-        already_processed_titles = db.query(Book).filter(func.lower(Book.title)==book.title.lower()).all()
-        if already_processed_titles:
-            return already_processed_titles
+    # if book.title:
+    #     already_processed_titles = db.query(Book).filter(func.lower(Book.title)==book.title.lower()).all()
+    #     if already_processed_titles:
+    #         return already_processed_titles
 
     query = " ".join(filter(None, [book.title, book.author]))
 
@@ -42,36 +42,72 @@ async def get_book(book:bookCreate,db:Session):
     
     return ans
 
+def add_book(book, db, user):
+    # Try to insert the book first
+    try:
+        newBook = Book(
+            gutenberg_id=book.gutenberg_id,
+            title=book.title,
+            authors=book.authors,
+            formats=book.formats,
+            cover_image_url=book.cover_image_url,
+            process_level=None
+        )
+        db.add(newBook)
+        db.commit()
+        db.refresh(newBook)
+    except IntegrityError:
+        # Another process already inserted it
+        db.rollback()
+        newBook = db.query(Book).filter(Book.gutenberg_id == book.gutenberg_id).first()
+
+
+    try:
+        newUserBook = UserBook(book_id=newBook.id, user_id=user.id, progress=0)
+        db.add(newUserBook)
+        db.commit()
+    except IntegrityError:
+            # Race condition: another process added it first
+        db.rollback()
+        user_book = db.query(UserBook).filter(
+            UserBook.user_id == user.id,
+            UserBook.book_id == newBook.id
+            ).first()
+
+    return newBook
 
 async def process_book(book:bookFull,db:Session,user):
     try:
-        db_book = db.query(Book).filter(Book.gutenberg_id==book.gutenberg_id,Book.process_level=="embedded").first()
-        if db_book:
-            user_book = db.query(UserBook).filter(UserBook.user_id==user.id,UserBook.book_id==book.id).first()
-            if not user_book:
-                user_book = UserBook(book_id = db_book.id,user_id=user.id,progress=0,lines=None)
-                db.add(user_book)
-                db.commit()
-            return db_book
-        try:
-            processing_book = Book(title = book.title,authors = book.authors,formats = book.formats, gutenberg_id = book.gutenberg_id, process_level = "processing")
-            db.add(processing_book)
-            db.commit()
-            db.refresh(processing_book)
-            user_book = UserBook(book_id = processing_book.id,user_id=user.id,progress=0,lines=None)
-            db.add(user_book)
-            db.commit()
-        except IntegrityError:
-            db.rollback()
-            return db.query(Book).filter(Book.gutenberg_id == book.gutenberg_id).first()
-
+        # db_book = db.query(Book).filter(Book.gutenberg_id==book.gutenberg_id,Book.process_level=="embedded").first()
+        # if db_book:
+        #     user_book = db.query(UserBook).filter(UserBook.user_id==user.id,UserBook.book_id==book.id).first()
+        #     if not user_book:
+        #         user_book = UserBook(book_id = db_book.id,user_id=user.id,progress=0,lines=None)
+        #         db.add(user_book)
+        #         db.commit()
+        #     return db_book
+        # try:
+        #     processing_book = Book(title = book.title,authors = book.authors,formats = book.formats, gutenberg_id = book.gutenberg_id, process_level = "processing")
+        #     db.add(processing_book)
+        #     db.commit()
+        #     db.refresh(processing_book)
+        #     user_book = UserBook(book_id = processing_book.id,user_id=user.id,progress=0,lines=None)
+        #     db.add(user_book)
+        #     db.commit()
+        # except IntegrityError:
+        #     db.rollback()
+        #     return db.query(Book).filter(Book.gutenberg_id == book.gutenberg_id).first()
+        added_book = add_book(book,db,user)
+        if added_book.process_level:
+            return added_book
         text_url = (book.formats.get("text/plain; charset=utf-8") or 
                 book.formats.get("text/plain") or 
                 book.formats.get("text/plain; charset=us-ascii"))
     
         cover_image_url = book.formats.get("image/jpeg")
-        processing_book.text_url = text_url
-        processing_book.cover_image_url = cover_image_url
+        
+        processing_book =  Book(gutenberg_id = book.gutenberg_id, title = book.title, authors = book.authors, formats=book.formats, text_url = text_url, cover_image_url = cover_image_url,process_level="processing")
+        db.add(processing_book)
         db.commit()
     
         async with httpx.AsyncClient(timeout=60.0,follow_redirects=True) as client:
