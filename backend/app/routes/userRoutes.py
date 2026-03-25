@@ -10,7 +10,7 @@ from app.models.bookModels import Book,BookChunk
 from app.utils.bookProcessing import max_token_batch,embed_batch
 from app.services import userServices as service
 from pydantic import BaseModel
-from app.schemas.userSchemas import LoginRequest,UserBookRequest
+from app.schemas.userSchemas import LoginRequest,UserBookRequest,UserLinesRequest
 from app.auth import get_current_user
 
 router = APIRouter(prefix = "/user",tags=["Book Routes"])
@@ -20,11 +20,16 @@ router = APIRouter(prefix = "/user",tags=["Book Routes"])
 def login(login:LoginRequest,db:Session=Depends(get_db)):
     return service.login(login,db)
 
-@router.get("/user_books",response_model = list[UserBookRequest])
-def get_user_books(user = Depends(get_current_user),db:Session=Depends(get_db)):
-    return service.get_user_books(user,db)
+@router.post("/add_user_book")
+def add_user_book(book:bookFull,user=Depends(get_current_user),db:Session=Depends(get_db)):
+    return service.add_user_book(book,user,db)
+
+@router.get("/all_user_books",response_model = list[UserBookRequest])
+def get_all_user_books(user = Depends(get_current_user),db:Session=Depends(get_db)):
+    return service.get_all_user_books(user,db)
 
 @router.post("/lines")
-def create_book_lines(book:bookFull,lines,user=Depends(get_current_user),db:Session=Depends(get_db)):
-    return service.create_book_lines(book,lines,user,db)
+def create_book_lines(payload: UserLinesRequest, user=Depends(get_current_user), db:Session=Depends(get_db)):
+    return service.create_book_lines(payload.book, payload.lines, user, db)
 
+@router.get("/specific_boo")

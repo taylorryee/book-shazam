@@ -51,7 +51,7 @@ export default function Shazam() {
 
   useEffect(()=>{
     try{
-        api.post("/user/lines",{book:SelectedBook,lines:JSON.stringify(lines)})
+        api.post("/user/lines",{book:SelectedBook,lines:lines.map((l) => l.text)})
     }
     catch(e){
         console.error(e)

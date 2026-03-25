@@ -27,8 +27,16 @@ def login(login:LoginRequest, db: Session):
 
     return {"access_token": token}
 
+def add_user_book(book,user,db):
+    already_added = db.query(UserBook).filter(UserBook.book_id == book.id).first()
+    if already_added:
+        return HTTPException()
+    newBook = UserBook(book_id = book.id, user_id = user.id, progress = 0)
+    db.add(newBook)
+    db.commit()
+    return newBook
 
-def get_user_books(user,db:Session):
+def get_all_user_books(user,db:Session):
     user_books = db.query(UserBook).filter(UserBook.user_id==user.id).options(selectinload(UserBook.book)).all()
     
     return[{"progress":ub.progress,"title":ub.book.title,"cover_image_url":ub.book.cover_image_url}for ub in user_books]

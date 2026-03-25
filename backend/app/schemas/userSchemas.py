@@ -19,3 +19,10 @@ class UserFull(BaseModel):
     
     class Config:
         from_attributes=True
+
+class UserLinesRequest(BaseModel):
+    book: bookFull
+    lines: list[str]
+
+    class Config:
+        from_attributes=True
