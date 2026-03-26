@@ -290,7 +290,7 @@ def embed_chunks():
     timeout_threshold = now - LEASE_TIMEOUT
     set_embedding = False
     try:
-        book = db.query(Book).filter(Book.process_level=='chunked').with_for_update(skip_locked=True).first()
+        book = db.query(Book).filter(Book.process_level=='processed').with_for_update(skip_locked=True).first()
         if not book:
             return
 

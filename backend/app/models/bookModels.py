@@ -8,22 +8,10 @@ from pgvector.sqlalchemy import Vector
 from sqlalchemy.dialects.postgresql import TSVECTOR
 
 class BookState(enum.Enum):
-    noContext = "noContext" #no book context
-    context = "context" #has book context
+    added = "added"
+
     processing = "processing"
-    processed = "processed" #currently processing book
-    
-    uploaded = "uploaded"
-
-    cleaned = "cleaned"
-    cleaning = "cleaning"
-    
-    chunked = "chunked"
-    chunking = "chunking"
-
-    failed_cleaning = "failed_cleaning"
-    failed_chunking = "failed_chunking"
-    failed_embedding = "failed_embedding"
+    processed = "processed"
 
     embedding = "embedding"
     embedded = "embedded"

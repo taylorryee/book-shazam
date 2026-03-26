@@ -28,7 +28,7 @@ export default function bookSelection(){
     
     const processBook = async (book:BookFullText):Promise<BookFullText> => {
         const response = await api.post("/book/process",book)
-        if (response.data.process_level == "processing"){
+        if (response.data.process_level != "processed"){
             await sleep(1000)
             const processed = await processBook(book) //Recursivly call processBook untill the book is processed. 
             return processed 
@@ -38,13 +38,6 @@ export default function bookSelection(){
         }
     }
 
-    const newUserBook = async (book:BookFullText) => {
-        try{    
-            await api.post("/user/new_user_book",{book})
-        }catch(e){
-            console.error(e)
-        }
-    }
 
     const handleProcess = async (book:BookFullText) => {
         try{
