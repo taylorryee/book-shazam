@@ -66,49 +66,49 @@ def add_book(book, db, user):
 
     return newBook
 
-async def process_book(book:bookFull,db:Session,user):
-    try:
-        # already_added,added_book = add_book(book,db,user)
-        # if already_added:
-        #     return db.get(Book,added_book.id)
-        processing_book = db.query(Book).filter(Book.id==book.id,Book.process_level=="added").with_for_update(skip_locked=True).first()
-        if not processing_book:
-            return db.get(Book,book.id)
+# async def process_book(book:bookFull,db:Session,user):
+#     try:
+#         # already_added,added_book = add_book(book,db,user)
+#         # if already_added:
+#         #     return db.get(Book,added_book.id)
+#         processing_book = db.query(Book).filter(Book.id==book.id,Book.process_level=="added").with_for_update(skip_locked=True).first()
+#         if not processing_book:
+#             return db.get(Book,book.id)
         
-        text_url = (book.formats.get("text/plain; charset=utf-8") or 
-                book.formats.get("text/plain") or 
-                book.formats.get("text/plain; charset=us-ascii"))
-        cover_image_url = book.formats.get("image/jpeg")
+#         text_url = (book.formats.get("text/plain; charset=utf-8") or 
+#                 book.formats.get("text/plain") or 
+#                 book.formats.get("text/plain; charset=us-ascii"))
+#         cover_image_url = book.formats.get("image/jpeg")
         
-        processing_book.text_url = text_url
-        processing_book.cover_image_url=cover_image_url
-        processing_book.process_level="processing"
-        db.commit()
+#         processing_book.text_url = text_url
+#         processing_book.cover_image_url=cover_image_url
+#         processing_book.process_level="processing"
+#         db.commit()
 
-        async with httpx.AsyncClient(timeout=60.0,follow_redirects=True) as client:
-            response = await client.get(text_url)
-            response.raise_for_status()
+#         async with httpx.AsyncClient(timeout=60.0,follow_redirects=True) as client:
+#             response = await client.get(text_url)
+#             response.raise_for_status()
 
-        cleaned_text = await clean_text(response.text)
-        chunks = await chunk_text(cleaned_text)
-        processing_book.text = cleaned_text
-        processing_book.chunks = chunks
-        processing_book.process_level = "processed"
+#         cleaned_text = await clean_text(response.text)
+#         chunks = await chunk_text(cleaned_text)
+#         processing_book.text = cleaned_text
+#         processing_book.chunks = chunks
+#         processing_book.process_level = "processed"
 
-        db.commit()
-        db.refresh(processing_book)
-        return processing_book
-    except Exception as e:
-        db.rollback()
-        raise e
+#         db.commit()
+#         db.refresh(processing_book)
+#         return processing_book
+#     except Exception as e:
+#         db.rollback()
+#         raise e
 
 
-async def process_book(book: bookFull, db: Session, user):
+async def process_book(book: bookFull, db: Session):
     try:
         # 1. Ensure book exists (safe)
         db_book = db.query(Book).filter(Book.id == book.id).first()
         if not db_book:
-            return None
+            raise HTTPException(404,"not found")
 
         # 2. Extract metadata early (no DB dependency)
         text_url = (
