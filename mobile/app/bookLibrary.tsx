@@ -42,7 +42,7 @@ export default function userBooks(){
             setLoading(true)
             const processed_book = await processBook(book)
             setSelectedBook(processed_book)
-            router.push("/Shazam")
+            router.push("/bookPages")
         }
         catch(e){
             console.log("error:",e)

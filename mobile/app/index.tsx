@@ -19,7 +19,7 @@ export default function Index() {
      console.log(token)
 
     // go to main app
-      router.push("/findBook"); // or whatever route you have
+      router.push("/bookFind"); // or whatever route you have
 
     } catch (error: any) {
       console.error(error);

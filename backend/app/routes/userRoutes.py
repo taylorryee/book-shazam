@@ -20,11 +20,7 @@ router = APIRouter(prefix = "/user",tags=["Book Routes"])
 def login(login:LoginRequest,db:Session=Depends(get_db)):
     return service.login(login,db)
 
-@router.post("/add_user_book")
-def add_user_book(book:bookFull,user=Depends(get_current_user),db:Session=Depends(get_db)):
-    return service.add_user_book(book,user,db)
-
-@router.get("/all_user_books",response_model = list[UserBookRequest])
+@router.get("/user_books",response_model = list[UserBookRequest])
 def get_all_user_books(user = Depends(get_current_user),db:Session=Depends(get_db)):
     return service.get_all_user_books(user,db)
 

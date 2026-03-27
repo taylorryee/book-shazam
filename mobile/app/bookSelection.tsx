@@ -54,7 +54,7 @@ export default function bookSelection(){
             const added_book = await addBook(book)
             const processed_book = await processBook(added_book) //process book 
             setSelectedBook(processed_book)
-            router.push("/Shazam")
+            router.push("/bookPages")
         }
         catch(e){
             console.log("error:",e)
@@ -67,6 +67,7 @@ export default function bookSelection(){
 
     }
 
+    useEffect(()=>{console.log(books)},[])
 
     if (loading && expandedBook) {
         return (

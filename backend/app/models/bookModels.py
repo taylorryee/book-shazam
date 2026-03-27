@@ -35,9 +35,7 @@ class Book(Base):
 
     users_books = relationship("UserBook",back_populates="book")
 
-    __table_args__=(
-        UniqueConstraint('title','authors'),
-    )
+
 
 
 

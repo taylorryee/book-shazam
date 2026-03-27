@@ -50,6 +50,7 @@ def add_book(book, db, user):
         )
         db.add(newBook)
         db.commit()
+        db.refresh(newBook)
 
     except IntegrityError:
         # Another process already inserted it

@@ -32,7 +32,7 @@ export default function findBook() {
       setLoading(true);
       setError(null);
       await getUserBooks();
-      router.push("/userBooks")
+      router.push("/bookLibrary")
     }
     catch(e){
       console.error("Failed to get user books",e)
