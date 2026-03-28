@@ -30,9 +30,11 @@ class bookFull(BaseModel):
 
     chunks:List[BookChunk] | None=None
 
-
-
     class Config:
         from_attributes=True
 
+
+class updateBookPosition(BaseModel):
+    id:int
+    progress:int
 

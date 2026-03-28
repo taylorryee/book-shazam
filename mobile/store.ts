@@ -5,17 +5,7 @@ type BookChunk = {
   text:string,
 }
 
-export type BookFull = {
-  id: number | null;
-  gutenberg_id: number;
-  title: string;
-  authors: string[];
-  formats: Record<string, string>;
-  text_url: string | null;
-  cover_image_url: string | null;
-  process_level: string | null;
 
-};
 
 export type BookFullText = {
   id: number | null;

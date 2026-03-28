@@ -193,4 +193,15 @@ async def start_reading(book,audio,db):
     
     return start_chunk
 
+
+def update_position(update,db,user):
+    user_book = db.get(UserBook, (update.id, user.id))
+
+    if user_book:
+        user_book.progress = update.progress
+        db.commit()
+        return user_book.progress
+    else:
+        # handle missing case
+        raise HTTPException(status_code=404, detail="UserBook not found")
     

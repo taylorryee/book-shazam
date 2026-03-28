@@ -1,7 +1,7 @@
 import {useState,useEffect,useRef} from "react"
 import {View,Button,TextInput,StyleSheet,Text,ScrollView,TextLayoutLine, ActivityIndicator,InteractionManager } from "react-native"
 import api from "../api"
-import {useBookStore,Page} from "../store"
+import {useBookStore,Page,BookFullText} from "../store"
 import PagerView from "react-native-pager-view";
 import SelectableText from "../components/SelectableText"
 
@@ -26,10 +26,10 @@ export default function Shazam() {
     (pageHeight - 2 * PAGE_PADDING) / LINE_HEIGHT
   );
 
-  const savePageToDB= async(book_id:number,pageIndex:number)=>{
+  const savePageToDB= async(id:number,progress:number)=>{
     try{
-        const response = await api.post("/book/position",{book_id,pageIndex})
-        console.log("book page saved")
+        const response = await api.post("/book/position",{id,progress})
+        console.log(response.data,"book page saved")
     }catch(e){
         console.error(e)
     }
@@ -50,22 +50,15 @@ export default function Shazam() {
   }, [lines, pageHeight]);
 
   useEffect(()=>{
-    try{
-        api.post("/user/lines",{book:SelectedBook,lines:lines.map((l) => l.text)})
-    }
-    catch(e){
-        console.error(e)
-    }
+    const timeout = setTimeout(() => {
+      if(SelectedBook.id)
+      savePageToDB(SelectedBook.id,pageIndex)
+    }, 3000);
 
-  },[lines])
+    return () => clearTimeout(timeout); 
+  },[pageIndex])
 
-// useEffect(() => {
-//   const handler = setTimeout(() => {
-//     savePageToDB(SelectedBook.gutenberg_id, pageIndex);
-//   }, 1000); // wait 1 second after last page change
-
-//   return () => clearTimeout(handler);
-// }, [pageIndex]);
+  useEffect(()=>{console.log(pageIndex)},[pageIndex])
   return (
     <View
       style={{ flex: 1 }}
