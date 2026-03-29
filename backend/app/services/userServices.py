@@ -31,7 +31,7 @@ def login(login:LoginRequest, db: Session):
 def get_all_user_books(user,db:Session):
     user_books = db.query(UserBook).filter(UserBook.user_id==user.id).options(selectinload(UserBook.book)).all()
     
-    return[{"progress":ub.progress,"title":ub.book.title,"cover_image_url":ub.book.cover_image_url}for ub in user_books]
+    return user_books
 
 
 
@@ -51,4 +51,3 @@ def create_book_lines(book, lines, user, db):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-

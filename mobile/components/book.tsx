@@ -1,12 +1,12 @@
 import { View, Text, StyleSheet,Pressable } from "react-native";
-import { BookFull } from "../store";
+import { BookFullText } from "../store";
 import { Image } from "expo-image";
 
 const COVER_WIDTH = 120;
 const COVER_HEIGHT = 180;
 const CONTAINER_HEIGHT = 200
 
-type BookProps = { book: BookFull };
+type BookProps = { book: BookFullText };
 
 export default function Book({ book }: BookProps) {
   return (

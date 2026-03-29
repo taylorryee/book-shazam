@@ -18,9 +18,16 @@ export type BookFullText = {
   process_level: string | null;
   text:string | null;
   chunks:BookChunk[] | null;
+  
 }
 
+export type UserBook={
+  book:BookFullText;
+  user_id:number;
+  progress:number;
+}
 
+export type BookFull = BookFullText
 
 export type Page = {
   lines:string[]
@@ -30,21 +37,21 @@ export type Page = {
 
 type BookStore = {
   books: BookFullText[];
-  selectedBook:BookFullText | null;
+  selectedBook:UserBook | null;
   bookPosition:number | null;
   pages:Page[];
   currentPage:number
-  userBooks:BookFullText[];
+  userBooks:UserBook[];
 
   
   setBooks: (books: BookFullText[]) => void;
   addBook: (book: BookFullText) => void;
   clearBooks: () => void;
-  setSelectedBook:(book:BookFullText | null)=>void
+  setSelectedBook:(book:UserBook | null)=>void
   setBookPosition:(position:number | null)=>void
   setPages:(pages:Page[])=>void
   setCurrentPage:(pageNum:number)=>void
-  setUserBooks:(books:BookFullText[])=>void;
+  setUserBooks:(books:UserBook[])=>void;
 
 };
 
@@ -73,4 +80,3 @@ export const useBookStore = create<BookStore>((set) => ({
 
 
 }));
-

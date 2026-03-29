@@ -1,4 +1,4 @@
-from app.schemas.bookSchemas import bookCreate,bookFull
+from app.schemas.bookSchemas import bookCreate,bookFull,userBook
 from app.models.bookModels import Book,BookChunk,UserBook
 from app.utils.bookProcessing import clean_text
 
@@ -64,8 +64,9 @@ def add_book(book, db, user):
     except IntegrityError:
             # Race condition: another process added it first
         db.rollback()
+        newUserBook = db.get(UserBook,(newBook.id,user.id))
 
-    return newBook
+    return newUserBook
 
 # async def process_book(book:bookFull,db:Session,user):
 #     try:
@@ -104,24 +105,24 @@ def add_book(book, db, user):
 #         raise e
 
 
-async def process_book(book: bookFull, db: Session):
+async def process_book(book: userBook, db: Session):
     try:
         # 1. Ensure book exists (safe)
-        db_book = db.query(Book).filter(Book.id == book.id).first()
+        db_book = db.query(Book).filter(Book.id == book.book.id).first()
         if not db_book:
             raise HTTPException(404,"not found")
 
         # 2. Extract metadata early (no DB dependency)
         text_url = (
-            book.formats.get("text/plain; charset=utf-8")
-            or book.formats.get("text/plain")
-            or book.formats.get("text/plain; charset=us-ascii")
+            book.book.formats.get("text/plain; charset=utf-8")
+            or book.book.formats.get("text/plain")
+            or book.book.formats.get("text/plain; charset=us-ascii")
         )
-        cover_image_url = book.formats.get("image/jpeg")
+        cover_image_url = book.book.formats.get("image/jpeg")
 
         # 3. 🔑 ATOMIC CLAIM (THIS IS THE MAGIC)
         updated = db.query(Book).filter(
-            Book.id == book.id,
+            Book.id == book.book.id,
             Book.process_level == "added"
         ).update({
             "process_level": "processing",
@@ -133,7 +134,7 @@ async def process_book(book: bookFull, db: Session):
 
         # 4. If we didn't claim it → someone else did
         if updated == 0:
-            return db.get(Book, book.id)
+            return db.get(UserBook,(book.book.id,book.user_id))
 
         # ✅ At this point:
         # YOU are the ONLY processor
@@ -147,7 +148,7 @@ async def process_book(book: bookFull, db: Session):
         chunks = await chunk_text(cleaned_text)
 
         # 6. Save results
-        db_book = db.get(Book, book.id)
+        db_book = db.get(Book, book.book.id)
         db_book.text = cleaned_text
         db_book.chunks = chunks
         db_book.process_level = "processed"
@@ -155,13 +156,13 @@ async def process_book(book: bookFull, db: Session):
         db.commit()
         db.refresh(db_book)
 
-        return db_book
+        return db.get(UserBook,(book.book.id,book.user_id))
 
     except Exception as e:
         db.rollback()
 
         # Optional: reset state for retryability
-        db_book = db.get(Book, book.id)
+        db_book = db.get(Book, book.book.id)
         if db_book and db_book.process_level == "processing":
             db_book.process_level = "added"
             db.commit()

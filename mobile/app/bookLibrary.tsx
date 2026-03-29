@@ -1,17 +1,17 @@
 import {useState,useEffect} from "react"
 import {ScrollView,View,Button,Text,StyleSheet,Pressable,Modal,ActivityIndicator} from "react-native"
-import {useBookStore,BookFullText} from "../store"
+import {useBookStore,UserBook} from "../store"
 import Book from "../components/book"
 import api from "../api"
 import { useRouter } from "expo-router";
 
 export default function userBooks(){
     const router= useRouter()
-    const books = useBookStore((state)=>state.books)
     const userBooks = useBookStore((state)=>state.userBooks)
     const [expandedBookID,setExpandedBookID]= useState<null | number>(null)
     const isExpanded = expandedBookID !=null
-    const expandedBook = books.find((b)=>b.gutenberg_id==expandedBookID)
+    const expandedUserBook = userBooks.find((b)=>b.book.gutenberg_id==expandedBookID)
+    const expandedBook = expandedUserBook?.book
     const [loading,setLoading] = useState(false)
 
     const setSelectedBook = useBookStore((state) => state.setSelectedBook)
@@ -25,9 +25,9 @@ export default function userBooks(){
     // Now we can use sleep in processBook using await sleep(1000) to actually pause the async function as it will await as long as the Promise is not resolved - which will happen when setTimeout finishes. 
     // If we just did await setTimeout(...) it would not wait, because setTimeout is non-blocking
     
-    const processBook = async (book:BookFullText):Promise<BookFullText> => {
+    const processBook = async (book:UserBook):Promise<UserBook> => {
         const response = await api.post("/book/process",book)
-        if (response.data.process_level == "processing"){
+        if (response.data.book.process_level == "processing"){
             await sleep(1000)
             const processed = await processBook(book) //Recursivly call processBook untill the book is processed. 
             return processed 
@@ -37,11 +37,11 @@ export default function userBooks(){
         }
     }
 
-    const handleProcess = async (book:BookFullText) => {
+    const handleProcess = async (book:UserBook) => {
         try{
             setLoading(true)
-            const processed_book = await processBook(book)
-            setSelectedBook(processed_book)
+            const processed_user_book = await processBook(book)
+            setSelectedBook(processed_user_book)
             router.push("/bookPages")
         }
         catch(e){
@@ -75,9 +75,9 @@ export default function userBooks(){
         <>
         <ScrollView>
             <View style = {styles.grid}>
-                {userBooks.map((book)=>(
-                    <Pressable key={book.gutenberg_id} onPress = {()=>setExpandedBookID(book.gutenberg_id)}>
-                        <Book book = {book}/>
+                {userBooks.map((userBook)=>(
+                    <Pressable key={userBook.book.gutenberg_id} onPress = {()=>setExpandedBookID(userBook.book.gutenberg_id)}>
+                        <Book book = {userBook.book}/>
                     </Pressable>
                 ))}
             
@@ -86,11 +86,11 @@ export default function userBooks(){
         
         <Modal visible={isExpanded} transparent={true}>
             <View style={styles.modalContainer}>
-                {expandedBook && (
+                {expandedUserBook && expandedBook && (
                     <View style={styles.modalContent}>
                         <Book book={expandedBook}/>
                         <View style={styles.buttons}>
-                            <Button title="Select" onPress={()=>handleProcess(expandedBook)}/>
+                            <Button title="Select" onPress={()=>handleProcess(expandedUserBook)}/>
                             <Button title="Close" onPress={()=>setExpandedBookID(null)}/>
                         </View>
                     </View>

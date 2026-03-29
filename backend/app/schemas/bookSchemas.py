@@ -38,3 +38,13 @@ class updateBookPosition(BaseModel):
     id:int
     progress:int
 
+
+class userBook(BaseModel):
+    book:bookFull
+    user_id:int
+    progress:int
+
+    class Config:
+        from_attributes=True
+
+

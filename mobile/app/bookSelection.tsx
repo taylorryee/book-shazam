@@ -1,6 +1,6 @@
 import {useState,useEffect} from "react"
 import {ScrollView,View,Button,Text,StyleSheet,Pressable,Modal,ActivityIndicator} from "react-native"
-import {useBookStore,BookFullText} from "../store"
+import {useBookStore,BookFullText,UserBook} from "../store"
 import Book from "../components/book"
 import api from "../api"
 import { useRouter } from "expo-router";
@@ -35,9 +35,9 @@ export default function bookSelection(){
         }
     }
     
-    const processBook = async (book:BookFullText):Promise<BookFullText> => {
+    const processBook = async (book:UserBook):Promise<UserBook> => {
         const response = await api.post("/book/process",book)
-        if (response.data.process_level != "processed"){
+        if (response.data.book.process_level != "processed"){
             await sleep(1000)
             const processed = await processBook(book) //Recursivly call processBook untill the book is processed. 
             return processed 
@@ -52,8 +52,8 @@ export default function bookSelection(){
         try{
             setLoading(true)
             const added_book = await addBook(book)
-            const processed_book = await processBook(added_book) //process book 
-            setSelectedBook(processed_book)
+            const processed_user_book = await processBook(added_book) //process book 
+            setSelectedBook(processed_user_book)
             router.push("/bookPages")
         }
         catch(e){

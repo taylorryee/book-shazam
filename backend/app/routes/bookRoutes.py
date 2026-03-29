@@ -1,7 +1,7 @@
 from fastapi import APIRouter,Depends, File, UploadFile, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
-from app.schemas.bookSchemas import bookCreate,bookFull,updateBookPosition
+from app.schemas.bookSchemas import bookCreate,bookFull,updateBookPosition,userBook
 from app.db import get_db
 from app.services import bookServices as service
 from app.celery_app import celery
@@ -20,16 +20,14 @@ async def get_book(book:bookCreate,db:Session=Depends(get_db), current_user: Use
     
     return await service.get_book(book,db)
 
-@router.post("/add",response_model = bookFull)
+@router.post("/add",response_model = userBook)
 def add_book(book:bookFull,db:Session=Depends(get_db),user=Depends(get_current_user)):
     return service.add_book(book,db,user)
 
-@router.post("/process",response_model = bookFull)
-async def process_book(book:bookFull,db:Session=Depends(get_db)):
+@router.post("/process",response_model = userBook)
+async def process_book(book:userBook,db:Session=Depends(get_db)):
     
     return await service.process_book(book,db)
-
-
 
 
 @router.post("/position")

@@ -1,7 +1,7 @@
 import {useState,useEffect,useRef} from "react"
 import {View,Button,TextInput,StyleSheet,Text,ScrollView,TextLayoutLine, ActivityIndicator,InteractionManager } from "react-native"
 import api from "../api"
-import {useBookStore,Page,BookFullText} from "../store"
+import {useBookStore,Page} from "../store"
 import PagerView from "react-native-pager-view";
 import SelectableText from "../components/SelectableText"
 
@@ -9,7 +9,7 @@ import SelectableText from "../components/SelectableText"
 export default function Shazam() {
   const SelectedBook = useBookStore((state) => state.selectedBook);
 
-  if (!SelectedBook || !SelectedBook.text) return null;
+  if (!SelectedBook || !SelectedBook.book.text) return null;
 
   const LINE_HEIGHT = 26;
   const PAGE_PADDING = 20;
@@ -17,7 +17,7 @@ export default function Shazam() {
   const [pageHeight, setPageHeight] = useState(0);
   const [lines, setLines] = useState<TextLayoutLine[]>([]);
   const [pages, setPages] = useState<string[]>([]);
-  const [pageIndex, setPageIndex] = useState(0);
+  const [pageIndex, setPageIndex] = useState(SelectedBook.progress ?? 0);
   const [isReady, setIsReady] = useState(false);
   
   
@@ -49,10 +49,16 @@ export default function Shazam() {
     }
   }, [lines, pageHeight]);
 
+  useEffect(() => {
+    if (SelectedBook.progress != null) {
+      setPageIndex(SelectedBook.progress);
+    }
+  }, [SelectedBook.progress]);
+
   useEffect(()=>{
     const timeout = setTimeout(() => {
-      if(SelectedBook.id)
-      savePageToDB(SelectedBook.id,pageIndex)
+      if(SelectedBook.book.id)
+      savePageToDB(SelectedBook.book.id,pageIndex)
     }, 3000);
 
     return () => clearTimeout(timeout); 
@@ -73,7 +79,7 @@ export default function Shazam() {
               if (lines.length === 0) setLines(e.nativeEvent.lines);
             }}
           >
-            {SelectedBook.text}
+            {SelectedBook.book.text}
           </Text>
         </View>
 
