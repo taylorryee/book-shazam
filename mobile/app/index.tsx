@@ -1,7 +1,7 @@
 import { Text, View ,Button,TextInput} from "react-native";
 import {useState} from "react"
 import {useRouter} from 'expo-router';
-import api from "../api"
+import {api} from "../api"
 import AsyncStorage from "@react-native-async-storage/async-storage";
 export default function Index() {
   const router = useRouter()

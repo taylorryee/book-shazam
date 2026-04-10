@@ -10,6 +10,8 @@ from app.utils.rag import process_audio
 from sqlalchemy import func
 from app.db import get_db, SessionLocal
 from sqlalchemy.orm import Session
+from app.utils.rag import relevant_chunks
+from fastapi.responses import StreamingResponse
 
 
     
@@ -58,4 +60,61 @@ def stream_book(book:bookFull,start_position:int,db:Session):
         return chunks
     except Exception as e:
         raise e
+    
+
+def upload_query(query, db, current_user):
+
+    embedding_response = openai.embeddings.create(
+        model="text-embedding-3-small",
+        input=query.text,
+    )
+
+    embedding = embedding_response.data[0].embedding
+
+    context = relevant_chunks(embedding, query.book_id, db)
+    formatted_context = "\n\n".join(
+        f"Passage {i+1}:\n{chunk}" for i, chunk in enumerate(context)
+    )
+
+    book = db.get(Book, query.book_id)
+
+    instructions = f"""You are an intelligent literary assistant helping users understand this book: {book.title}.
+
+You will be given:
+1) A user question
+2) Excerpts from {book.title} that may or may not be relevant
+
+Your job:
+
+- First determine whether the retrieved passages are relevant to the user's question.
+- If they are relevant, use them to answer accurately.
+- If they are not relevant, ignore them and answer using your general knowledge of the book.
+- If the question is interpretive (e.g., meaning, symbolism, themes), provide thoughtful analysis.
+- If the question is factual (e.g., plot details, character names), answer clearly and concisely.
+- Do NOT mention the retrieved excerpts or say things like “based on the context.”
+- Do NOT explain your internal reasoning process.
+"""
+
+    user_input = f"""
+Question: {query.text}
+
+Book Excerpts:
+{formatted_context}
+"""
+
+    # STREAMING RESPONSE
+    with openai.responses.stream(
+        model="gpt-5-nano",
+        instructions=instructions,
+        input=user_input,
+    ) as stream:
+
+        for event in stream:
+            if event.type == "response.output_text.delta":
+                yield event.delta
+
+        stream.get_final_response()
+
+        # return {"response":response.output_text,
+        #         "context":formatted_context}
     

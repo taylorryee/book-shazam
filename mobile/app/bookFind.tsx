@@ -1,7 +1,7 @@
 import { View, Text, Button, TextInput, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { useState,useEffect } from "react";
-import api from "../api"
+import {api} from "../api"
 import {useBookStore,BookFullText} from "../store"
 
 

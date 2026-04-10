@@ -2,7 +2,7 @@ import {useState,useEffect} from "react"
 import {ScrollView,View,Button,Text,StyleSheet,Pressable,Modal,ActivityIndicator} from "react-native"
 import {useBookStore,BookFullText,UserBook} from "../store"
 import Book from "../components/book"
-import api from "../api"
+import {api} from "../api"
 import { useRouter } from "expo-router";
 
 
