@@ -1,11 +1,17 @@
-import {useState,useEffect,useRef} from "react"
-import {View,Button,TextInput,StyleSheet,Text,ScrollView,TextLayoutLine, ActivityIndicator,InteractionManager,Pressable } from "react-native"
-import {api,streamQuery} from "../api"
-import {useBookStore,Page} from "../store"
+import { useState, useEffect, useRef } from "react";
+import {
+  View,
+  TextInput,
+  StyleSheet,
+  Text,
+  ScrollView,
+  TextLayoutLine,
+  ActivityIndicator,
+  Pressable,
+} from "react-native";
+import { api } from "../api";
+import { useBookStore } from "../store";
 import PagerView from "react-native-pager-view";
-import SelectableText from "../components/SelectableText"
-
-
 
 export default function Shazam() {
   const SelectedBook = useBookStore((state) => state.selectedBook);
@@ -23,39 +29,17 @@ export default function Shazam() {
   const [isReady, setIsReady] = useState(false);
 
   const [showInput, setShowInput] = useState(false);
-  const [inputValue, setInputValue] = useState("");
-
-  const lastTapRef = useRef(0);
-  const inputRef = useRef<TextInput>(null);
-
-  const linesPerPage = Math.floor((pageHeight - 2 * PAGE_PADDING) / LINE_HEIGHT);
-
   const [query, setQuery] = useState("");
   const [answer, setAnswer] = useState("");
   const [loading, setLoading] = useState(false);
+  const [connected, setConnected] = useState(false);
 
-  const queryLLM = async (path:string, text: string, book_id: number, progress: number) => {
-    try {
-      setAnswer("");
-      setLoading(true);
+  const lastTapRef = useRef(0);
+  const inputRef = useRef<TextInput>(null);
+  const wsRef = useRef<WebSocket | null>(null);
+  const answerScrollRef = useRef<ScrollView>(null);
 
-      await streamQuery({
-        path,
-        text,
-        book_id,
-        progress,
-        onChunk: (chunk) => {
-          setAnswer((prev) => prev + chunk);
-        },
-      });
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-    
+  const linesPerPage = Math.floor((pageHeight - 2 * PAGE_PADDING) / LINE_HEIGHT);
 
   const savePageToDB = async (id: number, progress: number) => {
     try {
@@ -88,17 +72,13 @@ export default function Shazam() {
 
   useEffect(() => {
     const timeout = setTimeout(() => {
-      if (SelectedBook.book.id) {
+      if (SelectedBook.book.id != null) {
         savePageToDB(SelectedBook.book.id, pageIndex);
       }
     }, 3000);
 
     return () => clearTimeout(timeout);
-  }, [pageIndex]);
-
-  useEffect(() => {
-    console.log(pageIndex);
-  }, [pageIndex]);
+  }, [pageIndex, SelectedBook.book.id]);
 
   useEffect(() => {
     if (showInput) {
@@ -110,6 +90,12 @@ export default function Shazam() {
     }
   }, [showInput]);
 
+  // useEffect(() => {
+  //   if (answer.length > 0) {
+  //     answerScrollRef.current?.scrollToEnd({ animated: true });
+  //   }
+  // }, [answer]);
+
   const handleTap = () => {
     const now = Date.now();
 
@@ -120,78 +106,73 @@ export default function Shazam() {
     lastTapRef.current = now;
   };
 
+  useEffect(() => { //Establish websocket connection on intial launch
+    const ws = new WebSocket("ws://192.168.1.30:8000/shazam/ws/query");
 
+    wsRef.current = ws;
 
+    ws.onopen = () => {
+      console.log("✅ Connected");
+      setConnected(true);
+    };
 
-const wsRef = useRef<WebSocket | null>(null);
-const [connected, setConnected] = useState(false);
+    ws.onclose = () => {
+      console.log("❌ Disconnected");
+      setConnected(false);
+    };
 
+    ws.onerror = (e) => {
+      console.log("⚠️ WebSocket error", e);
+      setLoading(false);
+    };
 
-useEffect(() => {
-  const ws = new WebSocket("ws://192.168.1.30:8000/shazam/ws/query");
+    ws.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
 
-  wsRef.current = ws;
+      if (msg.type === "delta") {
+        setAnswer((prev) => prev + msg.text);
+      }
 
-  ws.onopen = () => {
-    console.log("✅ Connected");
-    setConnected(true);
-  };
+      if (msg.type === "done") {
+        console.log("✅ Finished response");
+        setLoading(false);
+      }
 
-  ws.onclose = () => {
-    console.log("❌ Disconnected");
-    setConnected(false);
-  };
+      if (msg.type === "error") {
+        console.error(msg.message);
+        setLoading(false);
+      }
+    };
 
-  ws.onerror = (e) => {
-    console.log("⚠️ WebSocket error", e);
-  };
+    return () => {
+      ws.close();
+    };
+  }, []);
 
-  ws.onmessage = (event) => {
-    const msg = JSON.parse(event.data);
-
-    if (msg.type === "delta") {
-      setAnswer((prev) => prev + msg.text);
+  const sendQuery = (text: string, book_id: number, progress: number) => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      console.log("WebSocket not ready");
+      return;
     }
 
-    if (msg.type === "done") {
-      console.log("✅ Finished response");
-    }
+    setAnswer("");
+    setLoading(true);
 
-    if (msg.type === "error") {
-      console.error(msg.message);
-    }
+    wsRef.current.send(
+      JSON.stringify({
+        type: "query",
+        text,
+        book_id,
+        progress,
+      })
+    );
   };
-
-  return () => {
-    ws.close(); // cleanup when component unmounts
-  };
-}, []);
-
-const sendQuery = (text: string, book_id: number, progress: number) => {
-  if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-    console.log("WebSocket not ready");
-    return;
-  }
-
-  // clear old answer
-  setAnswer("");
-
-  wsRef.current.send(
-    JSON.stringify({
-      type: "query",
-      text,
-      book_id,
-      progress,
-    })
-  );
-};
 
   return (
     <View
       style={{ flex: 1 }}
       onLayout={(e) => setPageHeight(e.nativeEvent.layout.height)}
     >
-      {/* Hidden measurement */}
       <View style={{ position: "absolute", opacity: 0, padding: 20 }}>
         <Text
           style={{ lineHeight: LINE_HEIGHT }}
@@ -204,7 +185,7 @@ const sendQuery = (text: string, book_id: number, progress: number) => {
       </View>
 
       {!isReady ? (
-        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <View style={styles.loadingScreen}>
           <ActivityIndicator />
         </View>
       ) : (
@@ -229,26 +210,65 @@ const sendQuery = (text: string, book_id: number, progress: number) => {
 
           {showInput && (
             <View style={styles.overlay}>
-              <View style={styles.inputBox}>
+              <View style={styles.modal}>
+                <Text style={styles.modalTitle}>Ask Shazam</Text>
+                <Text style={styles.connectionText}>
+                  {connected ? "Connected" : "Disconnected"}
+                </Text>
+
                 <TextInput
                   ref={inputRef}
                   value={query}
                   onChangeText={setQuery}
-                  placeholder="Type here..."
+                  placeholder="Ask about this page..."
                   multiline
                   style={styles.input}
                 />
-                <Pressable style={styles.closeButton} onPress={()=>sendQuery(query,SelectedBook.book.id!,SelectedBook.progress)}>
-                <Text>Ask</Text>
-                </Pressable>
-                <Pressable
-                  style={styles.closeButton}
-                  onPress={() => setShowInput(false)}
-                >
-                  <Text>Close</Text>
-                </Pressable>
+
+                <View style={styles.buttonRow}>
+                  <Pressable
+                    style={styles.askButton}
+                    onPress={() => sendQuery(query, SelectedBook.book.id!, pageIndex)}
+                  >
+                    <Text style={styles.buttonText}>Ask</Text>
+                  </Pressable>
+
+                  <Pressable
+                    style={styles.closeButton}
+                    onPress={() => {
+                      setShowInput(false);
+                      setQuery("");
+                      setAnswer("");
+                      setLoading(false);
+                    }}
+                  >
+                    <Text style={styles.buttonText}>Close</Text>
+                  </Pressable>
+                </View>
+
+                <View style={styles.answerBox}>
+                  {loading && answer.length === 0 ? (
+                    <View style={styles.answerLoading}>
+                      <ActivityIndicator />
+                      <Text style={styles.answerPlaceholder}>Thinking...</Text>
+                    </View>
+                  ) : (
+                    <ScrollView
+                      ref={answerScrollRef}
+                      style={styles.answerScroll}
+                      contentContainerStyle={styles.answerScrollContent}
+                      showsVerticalScrollIndicator
+                      // onContentSizeChange={() =>
+                      //   answerScrollRef.current?.scrollToEnd({ animated: true })
+                      // }
+                    >
+                      <Text style={styles.answerText}>
+                        {answer || "Your response will appear here."}
+                      </Text>
+                    </ScrollView>
+                  )}
+                </View>
               </View>
-              <Text>{answer}</Text>
             </View>
           )}
         </View>
@@ -258,6 +278,11 @@ const sendQuery = (text: string, book_id: number, progress: number) => {
 }
 
 const styles = StyleSheet.create({
+  loadingScreen: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   overlay: {
     position: "absolute",
     top: 0,
@@ -266,22 +291,82 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.2)",
+    backgroundColor: "rgba(0,0,0,0.35)",
+    padding: 20,
   },
-  inputBox: {
-    width: "85%",
-    minHeight: 160,
-    backgroundColor: "white",
-    borderRadius: 12,
+  modal: {
+    width: "92%",
+    maxWidth: 500,
+    backgroundColor: "#f7f7f7",
+    borderRadius: 16,
     padding: 16,
+    gap: 12,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#111",
+  },
+  connectionText: {
+    fontSize: 13,
+    color: "#666",
   },
   input: {
-    flex: 1,
-    minHeight: 100,
+    minHeight: 90,
+    maxHeight: 140,
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: 12,
     textAlignVertical: "top",
+    fontSize: 16,
+    color: "#111",
+  },
+  buttonRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 10,
+  },
+  askButton: {
+    backgroundColor: "#111",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
   },
   closeButton: {
-    marginTop: 12,
-    alignSelf: "flex-end",
+    backgroundColor: "#666",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+  },
+  buttonText: {
+    color: "white",
+    fontWeight: "600",
+  },
+  answerBox: {
+    height: 240,
+    backgroundColor: "white",
+    borderRadius: 14,
+    padding: 12,
+  },
+  answerScroll: {
+    flex: 1,
+  },
+  answerScrollContent: {
+    paddingBottom: 8,
+  },
+  answerText: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: "#111",
+  },
+  answerLoading: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 10,
+  },
+  answerPlaceholder: {
+    color: "#666",
+    fontSize: 15,
   },
 });
