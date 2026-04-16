@@ -9,7 +9,7 @@ import asyncio
 
 
 def relevant_chunks(embedding: list[float],book_id:int, db: Session):
-    relevant = db.query(BookChunk).order_by(BookChunk.embedding.cosine_distance(embedding)).filter(BookChunk.book_id==book_id).limit(5).all()
+    relevant = db.query(BookChunk).order_by(BookChunk.embedding.cosine_distance(embedding)).filter(BookChunk.book_id==book_id).limit(7).all()
     return [chunk.text for chunk in relevant]
 
 

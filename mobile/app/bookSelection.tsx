@@ -20,6 +20,8 @@ export default function bookSelection(){
 
     const selectedBook = useBookStore((state)=>state.selectedBook)
 
+    const [shouldMeasure,setShouldMeasure] = useState(false)
+
 
     const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms)) //Promise syntax is Promise(resolve,reject => {code to run ... then either resolve() for success or reject() for failure}) In our case we simply run setTimeout which will not fail
     //so we can just do setTimeout then have it run resolve when it finishes to return the promise. We can now await this sleep function in processBook because it is a Promise that runs setTimeout.
@@ -51,9 +53,11 @@ export default function bookSelection(){
     const handleProcess = async (book:BookFullText) => {
         try{
             setLoading(true)
+            setShouldMeasure(true)
             const added_book = await addBook(book)
             const processed_user_book = await processBook(added_book) //process book 
             setSelectedBook(processed_user_book)
+            setShouldMeasure(true)
             router.push("/bookPages")
         }
         catch(e){
@@ -110,6 +114,17 @@ export default function bookSelection(){
                 )}
             </View>
         </Modal>
+        
+        {loading && (<View style={styles.loadingOverlay}>
+        <ActivityIndicator />
+            <Text>Processing...</Text>
+        </View>)}
+        
+        {shouldMeasure && (<View style = {{ position: "absolute", opacity: 0 }}>
+            <Text onTextLayout = {setLines}>
+                {}
+            </Text>
+        </View>)}
         </>
     );
 }
@@ -135,5 +150,11 @@ const styles = StyleSheet.create({
     },
     buttons:{
         gap:10
+    },
+    loadingOverlay:{
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        padding: 20,
     }
 });

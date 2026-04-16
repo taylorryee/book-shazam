@@ -5,8 +5,8 @@
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "node ./scripts/android.js",
+    "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint"
   },
@@ -47,6 +47,14 @@
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
     "typescript": "~5.9.2"
+  },
+  "codegenConfig": {
+    "name": "BookShazamReaderSpec",
+    "type": "components",
+    "jsSrcsDir": "./specs",
+    "android": {
+      "javaPackageName": "com.anonymous.mobile.codegen"
+    }
   },
   "private": true
 }

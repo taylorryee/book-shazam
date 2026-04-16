@@ -92,7 +92,7 @@ async def shazam_ws(websocket: WebSocket,db:Session=Depends(get_db)):
 
 You will be given:
 1) A user question
-2) Excerpts from {book.title} that may or may not be relevant
+2) Excerpts from {book.title}
 
 Your job:
 - First determine whether the retrieved passages are relevant to the user's question.
@@ -113,7 +113,7 @@ Book Excerpts:
 
                 # 3. stream OpenAI -> websocket
                 with openai.responses.stream(
-                    model="gpt-5-nano",
+                    model="o4-mini",
                     instructions=instructions,
                     input=user_input,
                 ) as stream:
