@@ -1,5 +1,5 @@
 import {useState,useEffect} from "react"
-import {ScrollView,View,Button,Text,StyleSheet,Pressable,Modal,ActivityIndicator} from "react-native"
+import {ScrollView,View,Button,Text,StyleSheet,Pressable,Modal,ActivityIndicator,TextLayoutLine} from "react-native"
 import {useBookStore,BookFullText,UserBook} from "../store"
 import Book from "../components/book"
 import {api} from "../api"
@@ -18,9 +18,15 @@ export default function bookSelection(){
     const setSelectedBook = useBookStore((state) => state.setSelectedBook)
     const setBookPosition = useBookStore((state)=>state.setBookPosition)
 
-    const selectedBook = useBookStore((state)=>state.selectedBook)
+    const SelectedBook = useBookStore((state)=>state.selectedBook)
 
     const [shouldMeasure,setShouldMeasure] = useState(false)
+    const [lines,setLines] = useState<TextLayoutLine[]>([])
+    const [pageHeight, setPageHeight] = useState(0);
+    const [pages, setPages] = useState<string[]>([]);
+    const LINE_HEIGHT = 26;
+    const PAGE_PADDING = 20;
+    const linesPerPage = Math.floor((pageHeight - 2 * PAGE_PADDING) / LINE_HEIGHT);
 
 
     const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms)) //Promise syntax is Promise(resolve,reject => {code to run ... then either resolve() for success or reject() for failure}) In our case we simply run setTimeout which will not fail
@@ -89,7 +95,7 @@ export default function bookSelection(){
       }
     
     return(
-        <>
+        <View style = {{flex:1}} onLayout={(e)=>{setPageHeight(e.nativeEvent.layout.height)}}>
         <ScrollView>
             <View style = {styles.grid}>
                 {books.map((book)=>(
@@ -120,12 +126,14 @@ export default function bookSelection(){
             <Text>Processing...</Text>
         </View>)}
         
-        {shouldMeasure && (<View style = {{ position: "absolute", opacity: 0 }}>
-            <Text onTextLayout = {setLines}>
-                {}
+        {shouldMeasure && SelectedBook && (<View style = {{ position: "absolute", opacity: 0 }}>
+            <Text style = {{lineHeight:LINE_HEIGHT}} onTextLayout = {(e)=>{
+                if(lines.length===0) setLines(e.nativeEvent.lines);
+            }}>
+                {SelectedBook.book.text}
             </Text>
         </View>)}
-        </>
+        </View>
     );
 }
 
