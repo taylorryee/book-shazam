@@ -14,7 +14,7 @@ type HiddenTextMeasureProps = {
   lineHeight: number;
   fontSize?: number;
   padding?: number;
-  onTextLayout: (e: NativeSyntheticEvent<TextLayoutEvent>) => void;
+onTextLayout: (e:TextLayoutEvent) => void;
 };
 
 export default function HiddenTextMeasure({

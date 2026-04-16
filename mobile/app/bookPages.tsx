@@ -24,9 +24,11 @@ export default function Shazam() {
 
   const [pageHeight, setPageHeight] = useState(0);
   const [lines, setLines] = useState<TextLayoutLine[]>([]);
-  const [pages, setPages] = useState<string[]>([]);
+  //const [pages, setPages] = useState<string[]>([]);
+  const pages = useBookStore((state)=>state.pages)
   const [pageIndex, setPageIndex] = useState(SelectedBook.progress ?? 0);
-  const [isReady, setIsReady] = useState(false);
+  //const [isReady, setIsReady] = useState(false);
+  const isReady = pages.length > 0;
 
   const [showInput, setShowInput] = useState(false);
   const [query, setQuery] = useState("");
@@ -50,19 +52,19 @@ export default function Shazam() {
     }
   };
 
-  useEffect(() => {
-    if (lines.length > 0 && pageHeight > 0 && linesPerPage > 0) {
-      const newPages: string[] = [];
+  // useEffect(() => {
+  //   if (lines.length > 0 && pageHeight > 0 && linesPerPage > 0) {
+  //     const newPages: string[] = [];
 
-      for (let i = 0; i < lines.length; i += linesPerPage) {
-        const chunk = lines.slice(i, i + linesPerPage);
-        newPages.push(chunk.map((l) => l.text).join(""));
-      }
+  //     for (let i = 0; i < lines.length; i += linesPerPage) {
+  //       const chunk = lines.slice(i, i + linesPerPage);
+  //       newPages.push(chunk.map((l) => l.text).join(""));
+  //     }
 
-      setPages(newPages);
-      setIsReady(true);
-    }
-  }, [lines, pageHeight, linesPerPage]);
+  //     setPages(newPages);
+  //     setIsReady(true);
+  //   }
+  // }, [lines, pageHeight, linesPerPage]);
 
   useEffect(() => {
     if (SelectedBook.progress != null) {
@@ -195,12 +197,12 @@ export default function Shazam() {
             initialPage={pageIndex}
             onPageSelected={(e) => setPageIndex(e.nativeEvent.position)}
           >
-            {pages.map((pageText, i) => (
-              <View key={i} style={{ flex: 1 }}>
+            {pages.map((page) => (
+              <View key={page.index} style={{ flex: 1 }}>
                 <Pressable style={{ flex: 1 }} onPress={handleTap}>
                   <View style={{ flex: 1, padding: 20 }}>
                     <Text selectable style={{ lineHeight: LINE_HEIGHT }}>
-                      {pageText}
+                      {page.text}
                     </Text>
                   </View>
                 </Pressable>

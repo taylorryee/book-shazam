@@ -6,7 +6,6 @@ type BookChunk = {
 }
 
 
-
 export type BookFullText = {
   id: number | null;
   gutenberg_id: number;
@@ -30,9 +29,10 @@ export type UserBook={
 export type BookFull = BookFullText
 
 export type Page = {
-  lines:string[]
+  text:string
   index:number
 }
+
 
 
 type BookStore = {
