@@ -60,8 +60,10 @@ export default function processing() {
             setBookProcessed(true)
         }
     run()},[])
-
+    
+    const [didPaginate,setDidPaginate] = useState(false)
     useEffect(() => { //create pages 
+        if(didPaginate)return;
         const run = async ()=>{
 
         
@@ -82,8 +84,9 @@ export default function processing() {
             }
 
         setPages(newPages);
+        setDidPaginate(true)
         //await embedPages(pages)
-        router.push("/bookPages")
+        router.replace("/bookPages")
         }  
        
     };run()}, [lines, pageHeight, linesPerPage]);
