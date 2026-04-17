@@ -42,6 +42,7 @@ type BookStore = {
   pages:Page[];
   currentPage:number
   userBooks:UserBook[];
+  processingBook:BookFullText | null;
 
   
   setBooks: (books: BookFullText[]) => void;
@@ -52,6 +53,7 @@ type BookStore = {
   setPages:(pages:Page[])=>void
   setCurrentPage:(pageNum:number)=>void
   setUserBooks:(books:UserBook[])=>void;
+  setProcessingBook:(book:BookFullText)=>void;
 
 };
 
@@ -63,6 +65,7 @@ export const useBookStore = create<BookStore>((set) => ({
   pages:[],
   currentPage:0,
   userBooks:[],
+  processingBook:null,
 
   setBooks:(books)=>set({books:books}),
   addBook: (book) =>
@@ -76,7 +79,8 @@ export const useBookStore = create<BookStore>((set) => ({
   setBookPosition:(position)=>set({bookPosition:position}),
   setPages:(pages)=>set({pages:pages}),
   setCurrentPage:(pageNum)=>set({currentPage:pageNum}),
-  setUserBooks:(books)=>set({userBooks:books})
+  setUserBooks:(books)=>set({userBooks:books}),
+  setProcessingBook:(book)=>set({processingBook:book})
 
 
 }));

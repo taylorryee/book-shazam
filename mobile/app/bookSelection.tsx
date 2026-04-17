@@ -30,6 +30,7 @@ export default function bookSelection(){
     const PAGE_PADDING = 20;
 
     const linesPerPage = Math.floor((pageHeight - 2 * PAGE_PADDING) / LINE_HEIGHT);
+    const setProcessingBook = useBookStore((state)=>state.setProcessingBook)
 
 
     const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms)) //Promise syntax is Promise(resolve,reject => {code to run ... then either resolve() for success or reject() for failure}) In our case we simply run setTimeout which will not fail
@@ -100,11 +101,14 @@ export default function bookSelection(){
 
     const handleProcess = async (book:BookFullText) => {
         try{
-            setLoading(true)
-            const added_book = await addBook(book)
-            const processed_user_book = await processBook(added_book) //process book 
-            setSelectedBook(processed_user_book)
-            setShouldMeasure(true)
+            // setLoading(true)
+            // const added_book = await addBook(book)
+            // const processed_user_book = await processBook(added_book) //process book 
+            // setSelectedBook(processed_user_book)
+            // setShouldMeasure(true)
+            if(expandedBook)setProcessingBook(expandedBook)
+            router.push("/processing")
+
             //router.push("/bookPages")
         }
         catch(e){
