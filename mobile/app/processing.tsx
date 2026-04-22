@@ -23,6 +23,7 @@ export default function processing() {
     const processingBook = useBookStore((state)=>state.processingBook)
     const setProcessingBook = useBookStore((state)=>state.setProcessingBook)
     const setPages = useBookStore((state)=>state.setPages)
+    const pages = useBookStore((state)=>state.pages)
 
     const [bookProcessed,setBookProcessed] = useState(false)
 
@@ -39,7 +40,11 @@ export default function processing() {
         }
     }
     
-    const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms)) 
+    const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms)) //Promise syntax is Promise(resolve,reject => {code to run ... then either resolve() for success or reject() for failure}) In our case we simply run setTimeout which will not fail
+    //so we can just do setTimeout then have it run resolve when it finishes to return the promise. We can now await this sleep function in processBook because it is a Promise that runs setTimeout.
+    // Now we can use sleep in processBook using await sleep(1000) to actually pause the async function as it will await as long as the Promise is not resolved - which will happen when setTimeout finishes. 
+    // If we just did await setTimeout(...) it would not wait, because setTimeout is non-blocking
+
     const processBook = async (book:UserBook):Promise<UserBook> => { //cleans book
         const response = await api.post("/book/process",book)
         if (response.data.book.process_level != "processed"){
@@ -49,6 +54,16 @@ export default function processing() {
         }
         else{
             return response.data
+        }
+    }
+
+    const embedPages = async (pages:Page[])=>{
+        try{
+            if(!selectedBook)return;
+            const response = await api.post("/book/embed", {pages: pages,book_id: selectedBook.book.id})
+            console.log(response.data)
+        }catch(e:any){
+            console.error(e)
         }
     }
 
@@ -69,16 +84,16 @@ export default function processing() {
         
         if (lines.length > 0 && pageHeight > 0 && linesPerPage > 0) {
             const newPages: Page[] = [];
-            let index = 0
+            let page_num = 0
             for (let i = 0; i < lines.length; i += linesPerPage) {
                 const chunk = lines.slice(i, i + linesPerPage);
                 const newText = chunk.map((l) => l.text).join("")
                 const newPage:Page = {
                     text:newText,
-                    index:index
+                    index:page_num
                 }
                 newPages.push(newPage)
-                index++;
+                page_num++;
                 
                 //newPages.push(chunk.map((l) => l.text).join(""));
             }
@@ -86,6 +101,12 @@ export default function processing() {
         setPages(newPages);
         setDidPaginate(true)
         //await embedPages(pages)
+        try{
+            const response = await embedPages(newPages)
+        }catch(e:any){
+            console.error(e)
+        }
+
         router.replace("/bookPages")
         }  
        

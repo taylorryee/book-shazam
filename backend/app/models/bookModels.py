@@ -1,4 +1,4 @@
-from sqlalchemy import Column,Integer,String,ForeignKey,Enum,UniqueConstraint,Text,DateTime,Index,Computed
+from sqlalchemy import Column,Integer,String,ForeignKey,Enum,UniqueConstraint,Text,DateTime,Index,Computed,ForeignKeyConstraint
 from sqlalchemy.orm import relationship
 from app.db import Base
 import enum
@@ -67,6 +67,30 @@ class BookChunk(Base):
         ),
 
     )
+
+class Page(Base):
+    __tablename__ = "pages"
+
+    id = Column(Integer, primary_key=True)
+    index = Column(Integer, index=True)
+    text = Column(Text)
+    embedding = Column(Vector(1536))
+
+    text_search = Column(
+        TSVECTOR,
+        Computed("to_tsvector('english', text)", persisted=True)
+    )
+
+    book_id = Column(Integer)
+    user_id = Column(Integer)
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["book_id", "user_id"],
+            ["users_books.book_id", "users_books.user_id"]
+        ),
+    )
+
 
 class User(Base):
     __tablename__="users"

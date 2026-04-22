@@ -13,7 +13,16 @@ from app.models.bookModels import User
 
 router = APIRouter(prefix = "/book",tags=["Book Routes"])
 
+from pydantic import BaseModel
+from typing import List
 
+class PageIn(BaseModel):
+    index: int
+    text: str
+
+class EmbedRequest(BaseModel):
+    pages: List[PageIn]
+    book_id: int  # keep it simple
 
 @router.post("/",response_model=List[bookFull])
 async def get_book(book:bookCreate,db:Session=Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -29,6 +38,9 @@ async def process_book(book:userBook,db:Session=Depends(get_db)):
     
     return await service.process_book(book,db)
 
+@router.post("/embed",response_model=userBook)
+async def embed_pages(req:EmbedRequest,user=Depends(get_current_user),db:Session=Depends(get_db)):
+    return await service.embed_pages(req,user,db)
 
 @router.post("/position")
 def update_position(update:updateBookPosition,db:Session=Depends(get_db),user=Depends(get_current_user)):

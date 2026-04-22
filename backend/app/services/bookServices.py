@@ -1,5 +1,5 @@
 from app.schemas.bookSchemas import bookCreate,bookFull,userBook
-from app.models.bookModels import Book,BookChunk,UserBook
+from app.models.bookModels import Book,BookChunk,UserBook,Page
 from app.utils.bookProcessing import clean_text
 
 from sqlalchemy import func, or_
@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 import httpx,json,requests,os,uuid,tempfile
 from fastapi import HTTPException
-from app.utils.bookProcessing import clean_text,chunk_text
+from app.utils.bookProcessing import clean_text,chunk_text,max_token_batch,embed_batch
 
 
 
@@ -68,41 +68,6 @@ def add_book(book, db, user):
 
     return newUserBook
 
-# async def process_book(book:bookFull,db:Session,user):
-#     try:
-#         # already_added,added_book = add_book(book,db,user)
-#         # if already_added:
-#         #     return db.get(Book,added_book.id)
-#         processing_book = db.query(Book).filter(Book.id==book.id,Book.process_level=="added").with_for_update(skip_locked=True).first()
-#         if not processing_book:
-#             return db.get(Book,book.id)
-        
-#         text_url = (book.formats.get("text/plain; charset=utf-8") or 
-#                 book.formats.get("text/plain") or 
-#                 book.formats.get("text/plain; charset=us-ascii"))
-#         cover_image_url = book.formats.get("image/jpeg")
-        
-#         processing_book.text_url = text_url
-#         processing_book.cover_image_url=cover_image_url
-#         processing_book.process_level="processing"
-#         db.commit()
-
-#         async with httpx.AsyncClient(timeout=60.0,follow_redirects=True) as client:
-#             response = await client.get(text_url)
-#             response.raise_for_status()
-
-#         cleaned_text = await clean_text(response.text)
-#         chunks = await chunk_text(cleaned_text)
-#         processing_book.text = cleaned_text
-#         processing_book.chunks = chunks
-#         processing_book.process_level = "processed"
-
-#         db.commit()
-#         db.refresh(processing_book)
-#         return processing_book
-#     except Exception as e:
-#         db.rollback()
-#         raise e
 
 
 async def process_book(book: userBook, db: Session):
@@ -145,12 +110,12 @@ async def process_book(book: userBook, db: Session):
             response.raise_for_status()
 
         cleaned_text = await clean_text(response.text)
-        chunks = await chunk_text(cleaned_text)
+        #chunks = await chunk_text(cleaned_text)
 
         # 6. Save results
         db_book = db.get(Book, book.book.id)
         db_book.text = cleaned_text
-        db_book.chunks = chunks
+        #db_book.chunks = chunks
         db_book.process_level = "processed"
 
         db.commit()
@@ -168,7 +133,30 @@ async def process_book(book: userBook, db: Session):
             db.commit()
 
         raise e
-    
+
+async def embed_pages(req,user,db):
+    all_embeddings = []
+    for batch in max_token_batch(req.pages,100_00):
+        embedded = embed_batch(batch)
+        all_embeddings.extend(embedded)
+    for page, embedding in zip(req.pages, all_embeddings):
+        newPage = Page(
+            index=page.index,
+            text=page.text,
+            embedding=embedding,
+            book_id=req.book_id,
+            user_id=user.id
+        )
+        db.add(newPage)
+
+    db.commit()
+    user_book = db.query(UserBook).filter(
+        UserBook.book_id == req.book_id,
+        UserBook.user_id == user.id
+    ).first()
+
+    return user_book
+
 
 async def start_reading(book,audio,db):
     file_extension = os.path.splitext(audio.filename)[1] #gets audio type, mp3, wav etc

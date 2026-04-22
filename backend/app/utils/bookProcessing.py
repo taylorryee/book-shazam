@@ -64,80 +64,6 @@ async def clean_text(book_text:str):
         raise e
 
 
-""" @celery.task
-def clean_text(): #Pull based - checks db for process_level = "uploaded"
-    db = SessionLocal()
-    set_cleaning = False
-    book = None
-    now = datetime.utcnow()
-    timeout_threshold = now - LEASE_TIMEOUT
-    try:
-        book = db.query(Book).filter(or_(Book.process_level=='uploaded',and_(Book.process_level=="cleaning",or_(Book.claimed_at<timeout_threshold,Book.claimed_at == None)))).with_for_update(skip_locked=True).first() #with_for_update locks db row/rows unitll you commit or rollback
-        #and skip_locked tells other workers to skip locked rows and keep searching instead of blocking untill locked row is unlocked
-        if not book:
-            return 
-
-        book.process_level = "cleaning"
-        book.claimed_at = now
-        db.commit()
-        set_cleaning = True
-        
-        text = unicodedata.normalize("NFKC", book.text)
-
-        # Normalize line endings
-        text = text.replace("\r\n", "\n")
-
-        # Remove Gutenberg header
-        start_pattern = r"\*\*\*\s*START OF.*?\*\*\*"
-        start_match = re.search(start_pattern, text, re.IGNORECASE)
-        if start_match:
-            text = text[start_match.end():]
-
-        # Remove Gutenberg footer
-        end_pattern = r"\*\*\*\s*END OF.*?\*\*\*"
-        end_match = re.search(end_pattern, text, re.IGNORECASE)
-        if end_match:
-            text = text[:end_match.start()]
-
-        # Normalize smart punctuation
-        replacements = {
-            "“": '"',
-            "”": '"',
-            "‘": "'",
-            "’": "'",
-            "—": "-",
-            "–": "-",
-        }
-        for k, v in replacements.items():
-            text = text.replace(k, v)
-
-        # Remove bracket-only lines
-        text = re.sub(r"^\[.*?\]$", "", text, flags=re.MULTILINE)
-
-        # Remove excessive blank lines and strip trailing whitespace
-        cleaned = "\n".join(line.rstrip() for line in re.sub(r"\n{3,}", "\n\n", text).split("\n")).strip()
-        
-        book.text = cleaned
-        book.claimed_at = None
-        book.process_level = "cleaned" 
-        db.commit()
- 
-    
-    except Exception as e:
-        db.rollback()
-        if book and set_cleaning: #We only need to set to failed if the process_level was set to "cleaning". If it was never set to "cleaning" than it is still in the "uploaded" phase and another worker can pick it up and retry. 
-            #Also we can set process_level to "failed" safelly because its already in the "cleaning" state which means no other worker will pick it up so we dont have to worry about race conditions. 
-            try:
-                book.process_level = "failed_cleaning"
-                book.claimed_at = None
-                db.commit()
-            except:
-                db.rollback()
-        
-            raise e
-    finally:
-        db.close() """
-
 
 
 encoding = tiktoken.get_encoding("cl100k_base")  #Token counter
@@ -270,14 +196,14 @@ def max_token_batch(texts,max_batch_size):
     batch_size = 0
 
     for chunk in texts:
-        cur = count_tokens(chunk["text"])
+        cur = count_tokens(chunk.text)
         if cur + batch_size > max_batch_size:
             if batch:
                 yield batch
-            batch = [chunk["text"]]
+            batch = [chunk.text]
             batch_size = cur
         else:
-            batch.append(chunk["text"])
+            batch.append(chunk.text)
             batch_size += cur
     if batch:
         yield batch
