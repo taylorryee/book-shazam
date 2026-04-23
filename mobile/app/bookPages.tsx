@@ -11,6 +11,7 @@ import {
 import { api } from "../api";
 import { useBookStore } from "../store";
 import PagerView from "react-native-pager-view";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const LINE_HEIGHT = 26;
 const DOUBLE_TAP_DELAY = 300;
@@ -57,8 +58,21 @@ export default function Shazam() {
     }
   }, [showInput]);
 
-  useEffect(() => {
-    const ws = new WebSocket("ws://192.168.1.22:8000/shazam/ws/query");
+ useEffect(() => {
+  let ws: WebSocket | null = null;
+
+  const connectWebSocket = async () => {
+    const token = await AsyncStorage.getItem("token");
+
+    if (!token) {
+      console.log("No token found");
+      return;
+    }
+
+    ws = new WebSocket(
+      `ws://192.168.1.22:8000/shazam/ws/query?token=${encodeURIComponent(token)}`
+    );
+
     wsRef.current = ws;
 
     ws.onopen = () => {
@@ -93,11 +107,17 @@ export default function Shazam() {
         setLoading(false);
       }
     };
+  };
 
-    return () => {
+  connectWebSocket();
+
+  return () => {
+    if (ws) {
       ws.close();
-    };
-  }, []);
+    }
+  };
+}, []);
+
 
   const savePageToDB = async (id: number, progress: number) => {
     try {

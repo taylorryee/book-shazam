@@ -3,15 +3,43 @@ from app.celery_app import celery
 import os
 from app.db import SessionLocal
 from sqlalchemy.orm import Session
-from app.models.bookModels import BookChunk,Book
+from app.models.bookModels import BookChunk,Book,Page
 from app.schemas.bookSchemas import bookFull
 import asyncio
 
 
-def relevant_chunks(embedding: list[float],book_id:int, db: Session):
+def relevant_chunks(embedding: list[float],progress:int,book_id:int, db: Session):
     relevant = db.query(BookChunk).order_by(BookChunk.embedding.cosine_distance(embedding)).filter(BookChunk.book_id==book_id).limit(7).all()
     return [chunk.text for chunk in relevant]
 
+def relevant_pages(embedding:list[float],index:int,book_id:int,user,db:Session):
+    closest = ( #3 closest pages
+        db.query(Page)
+        .filter(
+            Page.book_id == book_id,
+            Page.user_id == user.id,
+            Page.index < index   # strictly before
+        )
+        .order_by(Page.index.desc())  # 🔥 get closest ones first
+        .limit(3)
+        .all()
+    )
+
+    print(closest,flush=True)
+    return closest
+
+    # relevant = (
+    #     db.query(Page)
+    #     .filter(
+    #         Page.book_id == book_id,
+    #         Page.user_id == user.id,
+    #         Page.index<index-3
+    #     )
+    #     .order_by(Page.embedding.cosine_distance(embedding))
+    #     .limit(3)
+    #     .all()
+    # )
+    
 
 def db_work(book:bookFull,embedding:list[float]):
     db=SessionLocal()

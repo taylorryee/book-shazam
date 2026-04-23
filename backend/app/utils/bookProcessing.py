@@ -195,15 +195,15 @@ def max_token_batch(texts,max_batch_size):
     batch = []
     batch_size = 0
 
-    for chunk in texts:
-        cur = count_tokens(chunk.text)
+    for page in texts:
+        cur = count_tokens(page)
         if cur + batch_size > max_batch_size:
             if batch:
                 yield batch
-            batch = [chunk.text]
+            batch = [page]
             batch_size = cur
         else:
-            batch.append(chunk.text)
+            batch.append(page)
             batch_size += cur
     if batch:
         yield batch

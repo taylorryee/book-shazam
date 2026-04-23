@@ -61,7 +61,7 @@ export default function processing() {
         try{
             if(!selectedBook)return;
             const response = await api.post("/book/embed", {pages: pages,book_id: selectedBook.book.id})
-            console.log(response.data)
+            //console.log(response.data)
         }catch(e:any){
             console.error(e)
         }

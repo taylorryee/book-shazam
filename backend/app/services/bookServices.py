@@ -136,7 +136,8 @@ async def process_book(book: userBook, db: Session):
 
 async def embed_pages(req,user,db):
     all_embeddings = []
-    for batch in max_token_batch(req.pages,100_00):
+    texts = [page.text for page in req.pages]
+    for batch in max_token_batch(texts,100_00):
         embedded = embed_batch(batch)
         all_embeddings.extend(embedded)
     for page, embedding in zip(req.pages, all_embeddings):

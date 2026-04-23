@@ -1,10 +1,10 @@
-from fastapi import APIRouter,Depends, File, UploadFile
+from fastapi import APIRouter,Depends, File, UploadFile,HTTPException,status
 from sqlalchemy.orm import Session
 from app.schemas.audioSchemas import audioReturn
 from app.services import shazamServices as service
 from app.db import get_db
 from app.config import openai
-from app.utils.rag import relevant_chunks
+from app.utils.rag import relevant_chunks,relevant_pages
 from app.models.bookModels import Book,BookChunk
 from app.schemas.bookSchemas import bookFull
 from app.auth import get_current_user
@@ -13,6 +13,8 @@ from app.schemas.shazamSchemas import shazamQuery
 from fastapi.responses import StreamingResponse
 from fastapi import WebSocket,WebSocketDisconnect
 import json
+from jose import jwt, JWTError
+import os
 router = APIRouter(prefix = "/shazam", tags=["Shazam routes"])
 
 @router.post("/start_text")
@@ -44,16 +46,37 @@ def query_stream(
         media_type="text/plain; charset=utf-8",
     )
 
-
+SECRET_KEY = os.getenv("SECRET_KEY")
+ALGORITHM = os.getenv("ALGORITHM")
+credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
 
 @router.websocket("/ws/query")
 async def shazam_ws(websocket: WebSocket,db:Session=Depends(get_db)):
     await websocket.accept()
-
+    
     try:
         while True:
             raw = await websocket.receive_text()
             data = json.loads(raw)
+            token = websocket.query_params.get("token")
+            try:
+                payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])#Decodes access token into original dicitonary if
+        #with the username and expiration date if the signature is valid and not expired
+                id = int(payload.get("sub"))#Gets the user id from dictionary
+                if id is None:
+                    raise credentials_exception
+            except JWTError:
+                raise credentials_exception
+
+            user = db.query(User).filter(User.id == id).first()#Finds the user associated with the 
+    #username
+            if user is None:
+                raise credentials_exception
+
 
             if data.get("type") != "query":
                 await websocket.send_text(json.dumps({
@@ -75,7 +98,8 @@ async def shazam_ws(websocket: WebSocket,db:Session=Depends(get_db)):
                 embedding = embedding_response.data[0].embedding
 
                 # 2. retrieve context
-                context = relevant_chunks(embedding, book_id, db)
+                #context = relevant_chunks(embedding, progress, book_id, db)
+                context = relevant_pages(embedding,progress,book_id,user,db)
                 formatted_context = "\n\n".join(
                     f"Passage {i+1}:\n{chunk}" for i, chunk in enumerate(context)
                 )
@@ -138,54 +162,3 @@ Book Excerpts:
         print("Client disconnected")
     finally:
         db.close()
-# def upload_text(query:shazamQuery, current_user: User = Depends(get_current_user)):
-
-#         embedding_response = openai.embeddings.create(
-#             model="text-embedding-3-small",å
-#             input=text,
-#         )
-
-#         embedding = embedding_response.data[0].embedding
-
-#         context = relevant_chunks(embedding,book_id,db)
-#         formatted_context = "\n\n".join(f"Passage {i+1}:\n{chunk}" for i, chunk in enumerate(context))
-        
-#         book = db.get(Book,book_id)
-#         response = openai.responses.create(
-#             model = "gpt-5-nano",
-#             input=[
-#             {
-#                 "role": "system",
-#                 "content":f"""You are an intelligent literary assistant helping users understand this book: {book.title}.
-
-#                 You will be given:
-#                 1) A user question
-#                 2) Exceprts from {book.title} that may or may not be relevant
-
-#                 Your job:
-
-#                 - First determine whether the retrieved passages are relevant to the user's question.
-#                 - If they are relevant, use them to answer accurately.
-#                 - If they are not relevant, ignore them and answer using your general knowledge of the book.
-#                 - If the question is interpretive (e.g., asking about meaning, symbolism, themes), provide thoughtful analysis.
-#                 - If the question is factual (e.g., plot details, character names), answer clearly and concisely.
-#                 - Do NOT mention the retrieved excerpts, passages, or “context.”
-#                 - Do NOT say phrases like “based on the provided excerpts.”
-#                 - Do NOT explain your internal reasoning process."""
-#             },
-#             {
-#                 "role": "user",
-#                 "content": f"""
-#                 Question:{text}
-#                 Book Excerpts:{formatted_context}"""
-#             }
-#             ]
-#         )
-
-#         return {"response":response.output_text,
-#                 "context":formatted_context}
-
-
-# @router.get("/stream_book")
-# def stream_book(book:bookFull,start_position:int,db:Session=Depends(get_db), current_user: User = Depends(get_current_user)):
-#      return service.stream_book(book,start_position,db)
