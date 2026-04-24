@@ -12,22 +12,23 @@ def relevant_chunks(embedding: list[float],progress:int,book_id:int, db: Session
     relevant = db.query(BookChunk).order_by(BookChunk.embedding.cosine_distance(embedding)).filter(BookChunk.book_id==book_id).limit(7).all()
     return [chunk.text for chunk in relevant]
 
-def relevant_pages(embedding:list[float],index:int,book_id:int,user,db:Session):
-    closest = ( #3 closest pages
+def recent_pages(index: int, book_id: int, user, db: Session):
+    pages = (
         db.query(Page)
         .filter(
             Page.book_id == book_id,
             Page.user_id == user.id,
-            Page.index <= index   # strictly before
+            Page.index <= index
         )
-        .order_by(Page.index.desc())  # 🔥 get closest ones first
-        .limit(4)
+        .order_by(Page.index.desc())
+        .limit(10)
         .all()
     )
-    for chunk in closest:
-        print(chunk.text,flush=True)
+
+    return pages
+
     
-    return closest
+
 
     # relevant = (
     #     db.query(Page)

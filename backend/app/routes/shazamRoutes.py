@@ -4,7 +4,7 @@ from app.schemas.audioSchemas import audioReturn
 from app.services import shazamServices as service
 from app.db import get_db
 from app.config import openai
-from app.utils.rag import relevant_chunks,relevant_pages
+from app.utils.rag import relevant_chunks,recent_pages
 from app.models.bookModels import Book,BookChunk
 from app.schemas.bookSchemas import bookFull
 from app.auth import get_current_user
@@ -55,28 +55,30 @@ credentials_exception = HTTPException(
     )
 
 @router.websocket("/ws/query")
-async def shazam_ws(websocket: WebSocket,db:Session=Depends(get_db)):
+async def shazam_ws(websocket: WebSocket, db: Session = Depends(get_db)):
     await websocket.accept()
-    
+
+    token = websocket.query_params.get("token")
+    if not token:
+        await websocket.close(code=1008)
+        return
+
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = int(payload.get("sub"))
+    except JWTError:
+        await websocket.close(code=1008)
+        return
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if user is None:
+        await websocket.close(code=1008)
+        return
+
     try:
         while True:
             raw = await websocket.receive_text()
             data = json.loads(raw)
-            token = websocket.query_params.get("token")
-            try:
-                payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])#Decodes access token into original dicitonary if
-        #with the username and expiration date if the signature is valid and not expired
-                id = int(payload.get("sub"))#Gets the user id from dictionary
-                if id is None:
-                    raise credentials_exception
-            except JWTError:
-                raise credentials_exception
-
-            user = db.query(User).filter(User.id == id).first()#Finds the user associated with the 
-    #username
-            if user is None:
-                raise credentials_exception
-
 
             if data.get("type") != "query":
                 await websocket.send_text(json.dumps({
@@ -85,25 +87,18 @@ async def shazam_ws(websocket: WebSocket,db:Session=Depends(get_db)):
                 }))
                 continue
 
-            text = data["text"]
-            book_id = data["book_id"]
+            text = data.get("text", "").strip()
+            book_id = data.get("book_id")
             progress = data.get("progress")
 
-            try:
-                # 1. embedding
-                embedding_response = openai.embeddings.create(
-                    model="text-embedding-3-small",
-                    input=text,
-                )
-                embedding = embedding_response.data[0].embedding
+            if not text or book_id is None or progress is None:
+                await websocket.send_text(json.dumps({
+                    "type": "error",
+                    "message": "Missing text, book_id, or progress"
+                }))
+                continue
 
-                # 2. retrieve context
-                #context = relevant_chunks(embedding, progress, book_id, db)
-                context = relevant_pages(embedding,progress,book_id,user,db)
-                formatted_context = "\n\n".join(
-                    f"Page {i+1}:\n{chunk.text}" for i, chunk in enumerate(context)
-                )
-                print(formatted_context)
+            try:
                 book = db.get(Book, book_id)
                 if book is None:
                     await websocket.send_text(json.dumps({
@@ -112,26 +107,45 @@ async def shazam_ws(websocket: WebSocket,db:Session=Depends(get_db)):
                     }))
                     continue
 
-                instructions = f"""You are an intelligent literary assistant helping users understand a book.
+                pages = recent_pages(progress, book_id, user, db)
 
-You will be given:
-1) A user question
-2) The pages of a book
+                current_page = next((p for p in pages if p.index == progress), None)
+                previous_pages = [p for p in pages if p.index < progress]
 
-Your job:
+                if current_page is None:
+                    await websocket.send_text(json.dumps({
+                        "type": "error",
+                        "message": "Current page not found"
+                    }))
+                    continue
+
+                formatted_context = "\n\n".join(
+                    f"Page {p.index}:\n{p.text}" for p in reversed(previous_pages)
+                )
+
+                instructions = """You are an intelligent literary assistant helping users understand a book.
+
+Rules:
+- Answer only using the provided pages.
+- Do not mention or infer events beyond the provided pages.
+- If the answer is not supported by the provided pages, say you do not have enough context yet.
 - If the question is interpretive, provide thoughtful analysis based on provided pages.
-- If the question is factual, answer clearly and concisely based on provided pages.
-- Do NOT explain your internal reasoning process.
+- If the question is factual, answer based on provided pages.
+- Do not explain your internal reasoning process.
 """
 
                 user_input = f"""
-Question: {text}
+Question:
+{text}
 
-Book Pages:
+Current Page:
+Page {current_page.index}\n
+{current_page.text}
+
+Earlier Pages:
 {formatted_context}
 """
 
-                # 3. stream OpenAI -> websocket
                 with openai.responses.stream(
                     model="o4-mini",
                     instructions=instructions,
