@@ -101,9 +101,9 @@ async def shazam_ws(websocket: WebSocket,db:Session=Depends(get_db)):
                 #context = relevant_chunks(embedding, progress, book_id, db)
                 context = relevant_pages(embedding,progress,book_id,user,db)
                 formatted_context = "\n\n".join(
-                    f"Passage {i+1}:\n{chunk}" for i, chunk in enumerate(context)
+                    f"Page {i+1}:\n{chunk.text}" for i, chunk in enumerate(context)
                 )
-
+                print(formatted_context)
                 book = db.get(Book, book_id)
                 if book is None:
                     await websocket.send_text(json.dumps({
@@ -112,26 +112,22 @@ async def shazam_ws(websocket: WebSocket,db:Session=Depends(get_db)):
                     }))
                     continue
 
-                instructions = f"""You are an intelligent literary assistant helping users understand this book: {book.title}.
+                instructions = f"""You are an intelligent literary assistant helping users understand a book.
 
 You will be given:
 1) A user question
-2) Excerpts from {book.title}
+2) The pages of a book
 
 Your job:
-- First determine whether the retrieved passages are relevant to the user's question.
-- If they are relevant, use them to answer accurately.
-- If they are not relevant, ignore them and answer using your general knowledge of the book.
-- If the question is interpretive, provide thoughtful analysis.
-- If the question is factual, answer clearly and concisely.
-- Do NOT mention the retrieved excerpts, passages, or context.
+- If the question is interpretive, provide thoughtful analysis based on provided pages.
+- If the question is factual, answer clearly and concisely based on provided pages.
 - Do NOT explain your internal reasoning process.
 """
 
                 user_input = f"""
 Question: {text}
 
-Book Excerpts:
+Book Pages:
 {formatted_context}
 """
 

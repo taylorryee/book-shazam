@@ -7,6 +7,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Pressable,
+  Keyboard
 } from "react-native";
 import { api } from "../api";
 import { useBookStore } from "../store";
@@ -218,8 +219,8 @@ export default function Shazam() {
             <View style={styles.buttonRow}>
               <Pressable
                 style={styles.askButton}
-                onPress={() =>
-                  sendQuery(query, selectedBook.book.id!, pageIndex)
+                onPress={() => {Keyboard.dismiss();
+                  sendQuery(query, selectedBook.book.id!, pageIndex)}
                 }
               >
                 <Text style={styles.buttonText}>Ask</Text>

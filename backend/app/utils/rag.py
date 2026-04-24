@@ -18,14 +18,15 @@ def relevant_pages(embedding:list[float],index:int,book_id:int,user,db:Session):
         .filter(
             Page.book_id == book_id,
             Page.user_id == user.id,
-            Page.index < index   # strictly before
+            Page.index <= index   # strictly before
         )
         .order_by(Page.index.desc())  # 🔥 get closest ones first
-        .limit(3)
+        .limit(4)
         .all()
     )
-
-    print(closest,flush=True)
+    for chunk in closest:
+        print(chunk.text,flush=True)
+    
     return closest
 
     # relevant = (
