@@ -266,9 +266,14 @@ const styles = StyleSheet.create({
   page: {
     flex: 1,
     padding: 20,
+    backgroundColor:"#faf7f0"  
   },
   pageText: {
-    lineHeight: LINE_HEIGHT,
+    fontFamily: "EBGaramond-Regular",
+    fontSize: 16,
+    lineHeight: 26,
+    letterSpacing: -0.2,
+    color:"#222222"
   },
   overlay: {
     position: "absolute",
@@ -291,6 +296,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
+    fontFamily: "EBGaramond-Regular",
     fontWeight: "600",
     color: "#111",
   },

@@ -136,10 +136,8 @@ export default function processing() {
                 }}
             >
                 <Text
-                    style={{ 
-                        lineHeight: LINE_HEIGHT }}
-                        onTextLayout={(e) => {if (lines.length === 0) setLines(e.nativeEvent.lines);
-                    }}
+                    style={styles.pageText}
+                    onTextLayout={(e) => {if (lines.length === 0) setLines(e.nativeEvent.lines);}}
                 >
                     {selectedBook.book.text}
                 </Text>
@@ -148,3 +146,12 @@ export default function processing() {
         </View>
     );
 }
+
+const styles = StyleSheet.create({
+    pageText:{
+        fontFamily: "EBGaramond-Regular",
+        fontSize: 16,
+        lineHeight: 26,
+        letterSpacing: -0.2,
+    }
+})
