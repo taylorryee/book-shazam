@@ -10,8 +10,11 @@ export default function RootLayout() {
 
   if (!loaded) return null;
 
-  return <Stack>
-      <Stack.Screen name="bookPages" options={{ headerTitle: "" }} />
-      <Stack.Screen name="processing" options={{ headerTitle: "" }} />
-    </Stack>;
+return (
+  <Stack>
+    <Stack.Screen name="index" options={{ headerShown: false }} />
+    <Stack.Screen name="bookPages" options={{ headerTitle: "" }} />
+    <Stack.Screen name="processing" options={{ headerTitle: "" }} />
+  </Stack>
+);
 }

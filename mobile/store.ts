@@ -29,10 +29,11 @@ export type UserBook={
 export type BookFull = BookFullText
 
 export type Page = {
-  text:string
-  index:number
-}
-
+  text: string;
+  index: number;
+  isCover?: boolean;
+  coverImage?: string | null;
+};
 
 
 type BookStore = {

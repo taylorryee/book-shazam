@@ -1,5 +1,5 @@
 import {useState,useEffect} from "react"
-import {ScrollView,View,Button,Text,StyleSheet,Pressable,Modal,ActivityIndicator,TextLayoutLine} from "react-native"
+import {ScrollView,View,Button,Text,StyleSheet,Pressable,Modal,ActivityIndicator,TextLayoutLine,FlatList,useWindowDimensions} from "react-native"
 import {useBookStore,BookFullText,UserBook,Page} from "../store"
 import Book from "../components/book"
 import {api} from "../api"
@@ -29,9 +29,17 @@ export default function bookSelection(){
         catch(e){
             console.log("error:",e)
         }
+        finally{
+            setExpandedBookID(null)
+        }
 
     }
+    const { width } = useWindowDimensions();
 
+    const ITEM_WIDTH = 120; // target width of each book card
+    const SPACING = 16;
+
+    const numColumns = Math.floor(width / (ITEM_WIDTH + SPACING));
     
     return(
         <View style = {{flex:1}}>
@@ -45,6 +53,7 @@ export default function bookSelection(){
             
             </View>
         </ScrollView>
+
         
         <Modal visible={isExpanded} transparent={true}>
             <View style={styles.modalContainer}>

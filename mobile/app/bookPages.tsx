@@ -9,6 +9,7 @@ import {
   Pressable,
   Keyboard
 } from "react-native";
+import { Image } from "expo-image";
 import { api } from "../api";
 import { useBookStore } from "../store";
 import PagerView from "react-native-pager-view";
@@ -32,6 +33,13 @@ export default function Shazam() {
   const inputRef = useRef<TextInput>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const answerScrollRef = useRef<ScrollView>(null);
+
+  const coverUri = pages[pageIndex].coverImage ?? undefined;
+  useEffect(() => {
+  if (coverUri) {
+    Image.prefetch(coverUri);
+  }
+}, [coverUri]);
 
   useEffect(() => {
     if (selectedBook?.progress != null) {
@@ -189,10 +197,17 @@ export default function Shazam() {
         {pages.map((page) => (
           <View key={page.index} style={{ flex: 1 }}>
             <Pressable style={{ flex: 1 }} onPress={handleTap}>
-              <View style={styles.page}>
-                <Text selectable style={styles.pageText}>
+              <View style={page.isCover ? styles.coverPage : styles.page}>
+                {page.index === 0 ? (
+                  <Image source={{ uri: coverUri }} style={styles.coverImage} contentFit="cover"/>
+                  ) : (
+                  <Text selectable style={styles.pageText}>
+                    {page.text}
+                  </Text>
+                )}
+                {/* <Text selectable style={styles.pageText}>
                   {page.text}
-                </Text>
+                </Text> */}
               </View>
             </Pressable>
           </View>
@@ -268,6 +283,17 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor:"#faf7f0"  
   },
+coverPage: {
+  flex: 1,
+  backgroundColor: "#faf7f0",
+  justifyContent: "center",
+  alignItems: "center",
+},
+coverImage: {
+  width: "85%",
+  aspectRatio: 2 / 3,
+  borderRadius: 12,
+},
   pageText: {
     fontFamily: "EBGaramond-Regular",
     fontSize: 16,

@@ -76,6 +76,13 @@ export default function processing() {
         }
     run()},[])
     
+    const coverPage: Page = {
+        text: "", // or optional caption
+        index: 0,
+        isCover: true,
+        coverImage: processingBook.cover_image_url
+    };
+    
     const [didPaginate,setDidPaginate] = useState(false)
     useEffect(() => { //create pages 
         if(didPaginate)return;
@@ -84,7 +91,8 @@ export default function processing() {
         
         if (lines.length > 0 && pageHeight > 0 && linesPerPage > 0) {
             const newPages: Page[] = [];
-            let page_num = 0
+            newPages.push(coverPage)
+            let page_num = 1
             for (let i = 0; i < lines.length; i += linesPerPage) {
                 const chunk = lines.slice(i, i + linesPerPage);
                 const newText = chunk.map((l) => l.text).join("")
