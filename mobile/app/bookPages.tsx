@@ -78,10 +78,12 @@ export default function Shazam() {
       return;
     }
 
+    // ws = new WebSocket(
+    //   `ws://192.168.1.22:8000/shazam/ws/query?token=${encodeURIComponent(token)}`
+    // );
     ws = new WebSocket(
-      `ws://192.168.1.22:8000/shazam/ws/query?token=${encodeURIComponent(token)}`
+      `wss://book-shazam.onrender.com/shazam/ws/query?token=${encodeURIComponent(token)}`
     );
-
     wsRef.current = ws;
 
     ws.onopen = () => {
