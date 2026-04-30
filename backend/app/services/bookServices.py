@@ -159,29 +159,29 @@ async def embed_pages(req,user,db):
     return user_book
 
 
-async def start_reading(book,audio,db):
-    file_extension = os.path.splitext(audio.filename)[1] #gets audio type, mp3, wav etc
+# async def start_reading(book,audio,db):
+#     file_extension = os.path.splitext(audio.filename)[1] #gets audio type, mp3, wav etc
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=file_extension) as tmp: #creates a temporary file on disk that you can write too.
-        tmp.write(await audio.read())#read from the audio file which is of type UploadFile, we await because UploadFile is an async type
-        tmp_path = tmp.name
+#     with tempfile.NamedTemporaryFile(delete=False, suffix=file_extension) as tmp: #creates a temporary file on disk that you can write too.
+#         tmp.write(await audio.read())#read from the audio file which is of type UploadFile, we await because UploadFile is an async type
+#         tmp_path = tmp.name
 
-    with open(tmp_path,"rb") as f:
-        transcript = await openai.audio.transcriptions.create( 
-            model="whisper-1",
-            file=f
-        )
+#     with open(tmp_path,"rb") as f:
+#         transcript = await openai.audio.transcriptions.create( 
+#             model="whisper-1",
+#             file=f
+#         )
 
-    embedding_response = await openai.embeddings.create(
-        model="text-embedding-3-small",
-        input=transcript.text,
-    )
+#     embedding_response = await openai.embeddings.create(
+#         model="text-embedding-3-small",
+#         input=transcript.text,
+#     )
 
-    embedding = embedding_response.data[0].embedding
+#     embedding = embedding_response.data[0].embedding
 
-    start_chunk = db.query(BookChunk).filter(BookChunk.book_id == book.id).order_by(BookChunk.embedding.cosine_distance(embedding)).limit(1).all()
+#     start_chunk = db.query(BookChunk).filter(BookChunk.book_id == book.id).order_by(BookChunk.embedding.cosine_distance(embedding)).limit(1).all()
     
-    return start_chunk
+#     return start_chunk
 
 
 def update_position(update,db,user):

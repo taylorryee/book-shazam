@@ -27,3 +27,7 @@ def get_all_user_books(user = Depends(get_current_user),db:Session=Depends(get_d
 @router.post("/lines")
 def create_book_lines(payload: UserLinesRequest, user=Depends(get_current_user), db:Session=Depends(get_db)):
     return service.create_book_lines(payload.book, payload.lines, user, db)
+
+@router.get("/pages")
+def get_book_pages(book_id:int,user=Depends(get_current_user),db:Session=Depends(get_db)):
+    return service.get_book_pages(book_id,user,db)

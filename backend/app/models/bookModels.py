@@ -36,9 +36,6 @@ class Book(Base):
     users_books = relationship("UserBook",back_populates="book")
 
 
-
-
-
 class BookChunk(Base):
     __tablename__="book_chunks"
     id = Column(Integer,primary_key=True)
@@ -76,19 +73,12 @@ class Page(Base):
     text = Column(Text)
     embedding = Column(Vector(1536))
 
-    text_search = Column(
-        TSVECTOR,
-        Computed("to_tsvector('english', text)", persisted=True)
-    )
+    userBook_id = Column(Integer, ForeignKey("users_books.id"))
 
-    book_id = Column(Integer)
-    user_id = Column(Integer)
-
-    __table_args__ = (
-        ForeignKeyConstraint(
-            ["book_id", "user_id"],
-            ["users_books.book_id", "users_books.user_id"]
-        ),
+    userBook = relationship(
+        "UserBook",
+        back_populates="pages",
+        foreign_keys=[userBook_id]
     )
 
 
@@ -104,12 +94,15 @@ class User(Base):
 
 class UserBook(Base):
     __tablename__="users_books"
-    book_id = Column(Integer,ForeignKey("books.id"),primary_key=True)
-    user_id = Column(Integer,ForeignKey("users.id"),primary_key=True)
-    
-    progress = Column(Integer,index=True)
-    lines = Column(JSONB,nullable=True)
 
-    user = relationship("User",back_populates="users_books")
-    book = relationship("Book",back_populates="users_books")
+    id = Column(Integer, primary_key=True)
+    book_id = Column(Integer, ForeignKey("books.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
 
+    progress = Column(Integer, index=True)
+    lines = Column(JSONB, nullable=True)
+
+    user = relationship("User", back_populates="users_books")
+    book = relationship("Book", back_populates="users_books")
+
+    pages = relationship("Page", back_populates="userBook")

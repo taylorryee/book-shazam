@@ -30,60 +30,60 @@ api.interceptors.request.use(
 // api/streamQuery.ts
 
 
-type QueryArgs = {
-  path:string
-  text: string;
-  book_id: number;
-  progress: number;
-  onChunk: (chunk: string) => void;
-};
+// type QueryArgs = {
+//   path:string
+//   text: string;
+//   book_id: number;
+//   progress: number;
+//   onChunk: (chunk: string) => void;
+// };
 
 
-async function getAuthHeaders(extra: Record<string, string> = {}) {
-  const token = await AsyncStorage.getItem("token");
+// async function getAuthHeaders(extra: Record<string, string> = {}) {
+//   const token = await AsyncStorage.getItem("token");
 
-  return {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...extra,
-  };
-}
+//   return {
+//     "Content-Type": "application/json",
+//     ...(token ? { Authorization: `Bearer ${token}` } : {}),
+//     ...extra,
+//   };
+// }
 
-export async function streamQuery({
-  path,
-  text,
-  book_id,
-  progress,
-  onChunk,
-}: QueryArgs) {
-  const headers = await getAuthHeaders();
+// export async function streamQuery({
+//   path,
+//   text,
+//   book_id,
+//   progress,
+//   onChunk,
+// }: QueryArgs) {
+//   const headers = await getAuthHeaders();
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({ text, book_id, progress }),
-  });
+//   const response = await fetch(`${API_BASE_URL}${path}`, {
+//     method: "POST",
+//     headers,
+//     body: JSON.stringify({ text, book_id, progress }),
+//   });
 
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`);
-  }
+//   if (!response.ok) {
+//     throw new Error(`HTTP ${response.status}`);
+//   }
 
-  if (!response.body) {
-    throw new Error("Streaming body not available in this runtime");
-  }
+//   if (!response.body) {
+//     throw new Error("Streaming body not available in this runtime");
+//   }
 
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder("utf-8");
+//   const reader = response.body.getReader();
+//   const decoder = new TextDecoder("utf-8");
 
-  try {
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      if (value) {
-        onChunk(decoder.decode(value, { stream: true }));
-      }
-    }
-  } finally {
-    reader.releaseLock();
-  }
-}
+//   try {
+//     while (true) {
+//       const { value, done } = await reader.read();
+//       if (done) break;
+//       if (value) {
+//         onChunk(decoder.decode(value, { stream: true }));
+//       }
+//     }
+//   } finally {
+//     reader.releaseLock();
+//   }
+// }

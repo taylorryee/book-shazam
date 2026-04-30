@@ -35,6 +35,7 @@ export default function Shazam() {
   const answerScrollRef = useRef<ScrollView>(null);
 
   const coverUri = pages[pageIndex].coverImage ?? undefined;
+  // const coverUri = pages?.[pageIndex]?.coverImage;
   useEffect(() => {
   if (coverUri) {
     Image.prefetch(coverUri);
@@ -67,33 +68,43 @@ export default function Shazam() {
     }
   }, [showInput]);
 
- useEffect(() => {
-  let ws: WebSocket | null = null;
+useEffect(() => {
+  let isMounted = true;
+  let retryDelay = 2000;
 
   const connectWebSocket = async () => {
-    const token = await AsyncStorage.getItem("token");
+    if (!isMounted) return;
 
-    if (!token) {
-      console.log("No token found");
-      return;
+    const token = await AsyncStorage.getItem("token");
+    if (!token) return;
+
+    if (wsRef.current) {
+      wsRef.current.close();
     }
 
-    // ws = new WebSocket(
-    //   `ws://192.168.1.22:8000/shazam/ws/query?token=${encodeURIComponent(token)}`
-    // );
-    ws = new WebSocket(
+    const ws = new WebSocket(
       `wss://book-shazam.onrender.com/shazam/ws/query?token=${encodeURIComponent(token)}`
     );
+
     wsRef.current = ws;
 
     ws.onopen = () => {
+      if (!isMounted) return;
       console.log("✅ Connected");
       setConnected(true);
+      retryDelay = 2000; // reset backoff
     };
 
     ws.onclose = () => {
+      if (!isMounted) return;
       console.log("❌ Disconnected");
       setConnected(false);
+
+      setTimeout(() => {
+        connectWebSocket();
+      }, retryDelay);
+
+      retryDelay = Math.min(retryDelay * 2, 10000);
     };
 
     ws.onerror = (e) => {
@@ -109,7 +120,6 @@ export default function Shazam() {
       }
 
       if (msg.type === "done") {
-        console.log("✅ Finished response");
         setLoading(false);
       }
 
@@ -123,8 +133,9 @@ export default function Shazam() {
   connectWebSocket();
 
   return () => {
-    if (ws) {
-      ws.close();
+    isMounted = false;
+    if (wsRef.current) {
+      wsRef.current.close();
     }
   };
 }, []);

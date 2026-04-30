@@ -34,7 +34,6 @@ def get_all_user_books(user,db:Session):
     return user_books
 
 
-
 def create_book_lines(book, lines, user, db):
     try:
         curBook = db.query(UserBook).filter(
@@ -51,3 +50,18 @@ def create_book_lines(book, lines, user, db):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
+
+
+def get_book_pages(book_id, user, db):
+    user_book = db.query(UserBook).options(
+        selectinload(UserBook.pages)
+    ).filter(
+        UserBook.book_id == book_id,
+        UserBook.user_id == user.id
+    ).first()
+
+    if not user_book:
+        raise HTTPException(status_code=404, detail="Book not found")
+
+    return user_book.pages
+
