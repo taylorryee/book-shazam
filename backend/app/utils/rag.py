@@ -3,7 +3,7 @@ from app.celery_app import celery
 import os
 from app.db import SessionLocal
 from sqlalchemy.orm import Session
-from app.models.bookModels import BookChunk,Book,Page
+from app.models.bookModels import BookChunk,Book,Page,UserBook
 from app.schemas.bookSchemas import bookFull
 import asyncio
 
@@ -13,11 +13,11 @@ def relevant_chunks(embedding: list[float],progress:int,book_id:int, db: Session
     return [chunk.text for chunk in relevant]
 
 def recent_pages(index: int, book_id: int, user, db: Session):
+    userBook = db.query(UserBook).filter(UserBook.user_id == user.id, UserBook.book_id == book_id).first()
     pages = (
         db.query(Page)
         .filter(
-            Page.book_id == book_id,
-            Page.user_id == user.id,
+            Page.userBook_id == userBook.id,
             Page.index <= index
         )
         .order_by(Page.index.desc())

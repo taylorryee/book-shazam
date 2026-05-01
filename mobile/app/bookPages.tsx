@@ -82,8 +82,11 @@ useEffect(() => {
       wsRef.current.close();
     }
 
+    // const ws = new WebSocket(
+    //   `wss://book-shazam.onrender.com/shazam/ws/query?token=${encodeURIComponent(token)}`
+    // ); 
     const ws = new WebSocket(
-      `wss://book-shazam.onrender.com/shazam/ws/query?token=${encodeURIComponent(token)}`
+      `ws://192.168.1.22:8000/shazam/ws/query?token=${encodeURIComponent(token)}`
     );
 
     wsRef.current = ws;

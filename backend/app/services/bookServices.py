@@ -64,7 +64,7 @@ def add_book(book, db, user):
     except IntegrityError:
             # Race condition: another process added it first
         db.rollback()
-        newUserBook = db.get(UserBook,(newBook.id,user.id))
+        newUserBook = db.query(UserBook).filter(UserBook.book_id==newBook.id,UserBook.user_id==user.id).first()
 
     return newUserBook
 
@@ -99,8 +99,7 @@ async def process_book(book: userBook, db: Session):
 
         # 4. If we didn't claim it → someone else did
         if updated == 0:
-            return db.get(UserBook,(book.book.id,book.user_id))
-
+            return db.query(UserBook).filter(UserBook.user_id==book.user_id,UserBook.book_id==book.book.id).first()
         # ✅ At this point:
         # YOU are the ONLY processor
 
@@ -120,8 +119,9 @@ async def process_book(book: userBook, db: Session):
 
         db.commit()
         db.refresh(db_book)
+        
+        return db.query(UserBook).filter(UserBook.book_id==book.book.id,UserBook.user_id==book.user_id).first()
 
-        return db.get(UserBook,(book.book.id,book.user_id))
 
     except Exception as e:
         db.rollback()
@@ -140,21 +140,17 @@ async def embed_pages(req,user,db):
     for batch in max_token_batch(texts,100_00):
         embedded = embed_batch(batch)
         all_embeddings.extend(embedded)
+    user_book = db.query(UserBook).filter(UserBook.user_id==user.id,UserBook.book_id==req.book_id).first()
     for page, embedding in zip(req.pages, all_embeddings):
         newPage = Page(
             index=page.index,
             text=page.text,
             embedding=embedding,
-            book_id=req.book_id,
-            user_id=user.id
+            userBook_id = user_book.id
         )
         db.add(newPage)
 
     db.commit()
-    user_book = db.query(UserBook).filter(
-        UserBook.book_id == req.book_id,
-        UserBook.user_id == user.id
-    ).first()
 
     return user_book
 
@@ -185,11 +181,12 @@ async def embed_pages(req,user,db):
 
 
 def update_position(update,db,user):
-    user_book = db.get(UserBook, (update.id, user.id))
+    user_book = db.query(UserBook).filter(UserBook.book_id==update.id,UserBook.user_id==user.id).first()
 
     if user_book:
         user_book.progress = update.progress
         db.commit()
+        db.refresh(user_book)
         return user_book.progress
     else:
         # handle missing case
