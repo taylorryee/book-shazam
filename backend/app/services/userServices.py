@@ -63,5 +63,4 @@ def get_book_pages(book_id, user, db):
     if not user_book:
         raise HTTPException(status_code=404, detail="Book not found")
 
-    return user_book.pages
-
+    return sorted(user_book.pages, key=lambda page: page.index)

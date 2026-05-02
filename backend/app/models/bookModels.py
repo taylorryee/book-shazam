@@ -1,4 +1,4 @@
-from sqlalchemy import Column,Integer,String,ForeignKey,Enum,UniqueConstraint,Text,DateTime,Index,Computed,ForeignKeyConstraint
+from sqlalchemy import Column,Integer,String,ForeignKey,Boolean,Enum,UniqueConstraint,Text,DateTime,Index,Computed,ForeignKeyConstraint
 from sqlalchemy.orm import relationship
 from app.db import Base
 import enum
@@ -72,6 +72,8 @@ class Page(Base):
     index = Column(Integer, index=True)
     text = Column(Text)
     embedding = Column(Vector(1536))
+    isCover = Column(Boolean,index=True,nullable=True)
+    coverImage = Column(String,index=True,nullable=True)
 
     userBook_id = Column(Integer, ForeignKey("users_books.id"))
 

@@ -28,6 +28,16 @@ def get_all_user_books(user = Depends(get_current_user),db:Session=Depends(get_d
 def create_book_lines(payload: UserLinesRequest, user=Depends(get_current_user), db:Session=Depends(get_db)):
     return service.create_book_lines(payload.book, payload.lines, user, db)
 
-@router.get("/pages")
+
+class pageReturn(BaseModel):
+    text:str
+    index:int
+    isCover: bool | None = None
+    coverImage: str | None = None
+
+    class Config:
+        from_attributes = True
+
+@router.get("/pages",response_model = list[pageReturn])
 def get_book_pages(book_id:int,user=Depends(get_current_user),db:Session=Depends(get_db)):
     return service.get_book_pages(book_id,user,db)

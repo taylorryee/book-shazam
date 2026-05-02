@@ -19,7 +19,8 @@ from typing import List
 class PageIn(BaseModel):
     index: int
     text: str
-
+    isCover: bool | None = None
+    coverImage: str | None = None
 class EmbedRequest(BaseModel):
     pages: List[PageIn]
     book_id: int  # keep it simple
@@ -45,6 +46,5 @@ async def embed_pages(req:EmbedRequest,user=Depends(get_current_user),db:Session
 @router.post("/position")
 def update_position(update:updateBookPosition,db:Session=Depends(get_db),user=Depends(get_current_user)):
     return service.update_position(update,db,user)
-
 
 

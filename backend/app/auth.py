@@ -29,7 +29,7 @@ load_dotenv()
 # -----------------------------
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
-ACCESS_TOKEN_EXPIRE_MINUTES = 1000 #SUPER HIGH FOR TESTING - NEEDS TO BE CHANGED FOR PRODUCTION
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 30
 
 #oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/user/login") #This tells FastAPI
 #This endpoint uses OAuth2 Bearer tokens. When a user calls a protected route, look in the 
@@ -89,4 +89,3 @@ def decode_token(token:str):#using this for websocket since they dont send jwt i
     
     except JWTError:
         raise credentials_exception
-

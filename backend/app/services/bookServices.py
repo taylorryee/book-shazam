@@ -136,17 +136,25 @@ async def process_book(book: userBook, db: Session):
 
 async def embed_pages(req,user,db):
     all_embeddings = []
-    texts = [page.text for page in req.pages if page.text.strip() != ""]
+    pages_with_text = [page for page in req.pages if page.text.strip() != ""]
+    texts = [page.text for page in pages_with_text]
     for batch in max_token_batch(texts,100_00):
         embedded = embed_batch(batch)
         all_embeddings.extend(embedded)
     user_book = db.query(UserBook).filter(UserBook.user_id==user.id,UserBook.book_id==req.book_id).first()
-    for page, embedding in zip(req.pages, all_embeddings):
+    embeddings_by_index = {
+        page.index: embedding
+        for page, embedding in zip(pages_with_text, all_embeddings)
+    }
+
+    for page in req.pages:
         newPage = Page(
             index=page.index,
             text=page.text,
-            embedding=embedding,
-            userBook_id = user_book.id
+            embedding=embeddings_by_index.get(page.index),
+            userBook_id = user_book.id,
+            isCover=page.isCover,
+            coverImage=page.coverImage
         )
         db.add(newPage)
 
