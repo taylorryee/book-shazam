@@ -15,6 +15,7 @@ import { useBookStore } from "../store";
 import PagerView from "react-native-pager-view";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+const LINE_HEIGHT = 26;
 const DOUBLE_TAP_DELAY = 300;
 
 export default function Shazam() {
@@ -33,13 +34,13 @@ export default function Shazam() {
   const wsRef = useRef<WebSocket | null>(null);
   const answerScrollRef = useRef<ScrollView>(null);
 
-  const coverUri = selectedBook?.book.cover_image_url ?? pages[0]?.coverImage ?? undefined;
-
+  const coverUri = pages[pageIndex].coverImage ?? undefined;
+  // const coverUri = pages?.[pageIndex]?.coverImage;
   useEffect(() => {
-    if (coverUri) {
-      Image.prefetch(coverUri);
-    }
-  }, [coverUri]);
+  if (coverUri) {
+    Image.prefetch(coverUri);
+  }
+}, [coverUri]);
 
   useEffect(() => {
     if (selectedBook?.progress != null) {
@@ -48,20 +49,14 @@ export default function Shazam() {
   }, [selectedBook?.progress]);
 
   useEffect(() => {
-    if (pages.length > 0 && pageIndex > pages.length - 1) {
-      setPageIndex(pages.length - 1);
-    }
-  }, [pageIndex, pages.length]);
-
-  useEffect(() => {
-    if (!selectedBook?.book?.id || pages.length === 0) return;
+    if (!selectedBook?.book?.id) return;
 
     const timeout = setTimeout(() => {
       savePageToDB(selectedBook.book.id!, pageIndex);
     }, 3000);
 
     return () => clearTimeout(timeout);
-  }, [pageIndex, pages.length, selectedBook?.book?.id]);
+  }, [pageIndex, selectedBook?.book?.id]);
 
   useEffect(() => {
     if (showInput) {
@@ -87,14 +82,15 @@ useEffect(() => {
       wsRef.current.close();
     }
 
-    // const ws = new WebSocket(
-    //   `wss://book-shazam.onrender.com/shazam/ws/query?token=${encodeURIComponent(token)}`
-    // ); 
     const ws = new WebSocket(
-      `ws://192.168.1.22:8000/shazam/ws/query?token=${encodeURIComponent(token)}`
-    );
+      `wss://book-shazam.onrender.com/shazam/ws/query?token=${encodeURIComponent(token)}`
+    ); 
+    // const ws = new WebSocket(
+    //   `ws://192.168.1.22:8000/shazam/ws/query?token=${encodeURIComponent(token)}`
+    // );
 
     wsRef.current = ws;
+
     ws.onopen = () => {
       if (!isMounted) return;
       console.log("✅ Connected");
@@ -195,7 +191,7 @@ useEffect(() => {
     setLoading(false);
   };
 
-  if (!selectedBook || !selectedBook.book.id) {
+  if (!selectedBook || !selectedBook.book.text || !selectedBook.book.id) {
     return null;
   }
 
@@ -211,19 +207,15 @@ useEffect(() => {
     <View style={{ flex: 1 }}>
       <PagerView
         style={{ flex: 1 }}
-        initialPage={Math.min(pageIndex, pages.length - 1)}
+        initialPage={pageIndex}
         onPageSelected={(e) => setPageIndex(e.nativeEvent.position)}
       >
         {pages.map((page) => (
           <View key={page.index} style={{ flex: 1 }}>
             <Pressable style={{ flex: 1 }} onPress={handleTap}>
               <View style={page.isCover ? styles.coverPage : styles.page}>
-                {page.isCover ? (
-                  <Image
-                    source={{ uri: page.coverImage ?? coverUri }}
-                    style={styles.coverImage}
-                    contentFit="cover"
-                  />
+                {page.index === 0 ? (
+                  <Image source={{ uri: coverUri }} style={styles.coverImage} contentFit="cover"/>
                   ) : (
                   <Text selectable style={styles.pageText}>
                     {page.text}
