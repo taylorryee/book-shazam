@@ -47,4 +47,8 @@ class userBook(BaseModel):
     class Config:
         from_attributes=True
 
+class bookAddResponse(BaseModel):
+    book:userBook
+    in_library:bool
+
 

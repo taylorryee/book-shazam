@@ -1,4 +1,4 @@
-from app.schemas.bookSchemas import bookCreate,bookFull,userBook
+from app.schemas.bookSchemas import bookCreate,bookFull,userBook,bookAddResponse
 from app.models.bookModels import Book,BookChunk,UserBook,Page
 from app.utils.bookProcessing import clean_text
 
@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 import httpx,json,requests,os,uuid,tempfile
 from fastapi import HTTPException
 from app.utils.bookProcessing import clean_text,chunk_text,max_token_batch,embed_batch
+
 
 
 
@@ -62,11 +63,11 @@ def add_book(book, db, user):
         db.add(newUserBook)
         db.commit()
     except IntegrityError:
-            # Race condition: another process added it first
+            # Race condition: another process added it first, or user has already added this
         db.rollback()
-        newUserBook = db.query(UserBook).filter(UserBook.book_id==newBook.id,UserBook.user_id==user.id).first()
-
-    return newUserBook
+        return bookAddResponse(book=db.query(UserBook).filter(UserBook.book_id==newBook.id,UserBook.user_id==user.id).first(),in_library=True)
+    db.refresh(newUserBook)
+    return bookAddResponse(book=newUserBook,in_library=False)
 
 
 

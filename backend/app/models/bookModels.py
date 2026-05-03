@@ -83,6 +83,10 @@ class Page(Base):
         foreign_keys=[userBook_id]
     )
 
+    __table_args__ = (
+        UniqueConstraint("userBook_id", "index", name="uq_page"),
+    )
+
 
 class User(Base):
     __tablename__="users"
@@ -108,3 +112,8 @@ class UserBook(Base):
     book = relationship("Book", back_populates="users_books")
 
     pages = relationship("Page", back_populates="userBook")
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "book_id", name="uq_user_book"),
+    )
+
